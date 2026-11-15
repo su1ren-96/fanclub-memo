@@ -1,4 +1,4 @@
-/* Fanclub Memo 6.6 - GREETING CARD. Additive feature; no storage migrations. */
+/* Fanclub Memo 6.7 - GREETING CARD layout fix. Additive; no storage migrations. */
 (function(){
 'use strict';
 SPECIAL_NAMES.greeting='デジタルグリーティングカード';
@@ -107,12 +107,45 @@ window.greetingSave=async function(){
 function greetingContent(o,preview=false){
  const g={...defaultGreeting(),...(o.greeting||{})};
  const flip=g.mode==='flip';
- let card=flip?`<button type="button" class="gc-flip" onclick="greetingFlip(this)" aria-label="カードの表裏を切り替える"><span class="gc-flip-inner"><span class="gc-face gc-front"><img src="${g.front}" alt="表面"></span><span class="gc-face gc-back">${g.back?`<img src="${g.back}" alt="裏面">`:`<span class="gc-back-message">${e(g.message||'MESSAGE')}<br><small>${e(g.signature)}</small></span>`}</span></span></button><p class="gc-hint">カードをタップすると裏返ります</p>`:
- `<div class="gc-envelope-stage"><button type="button" class="gc-envelope gc-${g.envelopeDesign}" style="--env-color:${e(g.envelopeColor)}" onclick="greetingOpen(this)" aria-label="封筒を開く"><span class="gc-flap"></span><span class="gc-pocket"></span><span class="gc-card"><img src="${g.front}" alt="グリーティングカード"></span><span class="gc-seal">✉</span></button><p class="gc-hint">封筒をタップして開く・閉じる</p></div>`;
+ let card=flip?`<button type="button" class="gc-flip" onclick="greetingFlip(this)" aria-label="カードの表裏を切り替える"><span class="gc-flip-inner"><span class="gc-face gc-front"><img src="${g.front}" alt="表面" onload="greetingImageSized(this,'flip')"></span><span class="gc-face gc-back">${g.back?`<img src="${g.back}" alt="裏面" onload="greetingImageSized(this,'flipBack')">`:`<span class="gc-back-message">${e(g.message||'MESSAGE')}<br><small>${e(g.signature)}</small></span>`}</span></span></button><p class="gc-hint">カードをタップすると裏返ります</p>`:
+ `<div class="gc-envelope-stage"><button type="button" class="gc-envelope gc-${g.envelopeDesign}" style="--env-color:${e(g.envelopeColor)}" onclick="greetingOpen(this)" aria-label="封筒を開く"><span class="gc-flap"></span><span class="gc-pocket"></span><span class="gc-card"><img src="${g.front}" alt="グリーティングカード" onload="greetingImageSized(this,'envelope')"></span><span class="gc-seal">✉</span></button><p class="gc-hint">封筒をタップして開く・閉じる</p></div>`;
  return `<section class="gc-detail" style="--gc-bg:${e(g.background)}"><div class="gc-title"><small>GREETING CARD</small><h1>${e(o.title)}</h1><div class="meta">${day(o.when)}</div></div>${card}${g.message?`<div class="gc-message">${e(g.message)}</div>`:''}${g.signature?`<div class="gc-signature">${e(g.signature)}</div>`:''}</section>`;
 }
-window.greetingOpen=function(btn){btn.classList.toggle('gc-open')};
-window.greetingFlip=function(btn){btn.classList.toggle('gc-flipped')};
+// Size only the viewing frame. Never change stored images or existing records.
+function fitCard(img, envelope){
+ const w=img.naturalWidth||1,h=img.naturalHeight||1,ratio=w/h;
+ const maxW=Math.min(envelope?320:440, Math.max(200,window.innerWidth-90));
+ const maxH=Math.min(envelope?370:Math.round(window.innerHeight*.58),envelope?370:560);
+ const width=Math.max(1,Math.round(Math.min(maxW,maxH*ratio)));
+ return {width,height:Math.max(1,Math.round(width/ratio))};
+}
+window.greetingImageSized=function(img,kind){
+ if(!img.naturalWidth||!img.naturalHeight)return;
+ if(kind==='envelope'){
+   const box=img.closest('.gc-envelope'); if(!box)return;
+   const v=fitCard(img,true);
+   box.style.setProperty('--gc-card-w',v.width+'px');
+   box.style.setProperty('--gc-card-h',v.height+'px');
+ }else{
+   const box=img.closest('.gc-flip');if(!box)return;
+   const v=fitCard(img,false);
+   const isBack=kind==='flipBack';
+   box.dataset[isBack?'backRatio':'frontRatio']=String(img.naturalWidth/img.naturalHeight);
+   // Only the visible face determines dimensions; no blank padding for landscape cards.
+   if(!isBack||box.classList.contains('gc-flipped')){
+      box.style.width=v.width+'px';box.style.height=v.height+'px';
+   }
+ }
+};
+window.greetingOpen=function(btn){btn.classList.toggle('gc-open');btn.setAttribute('aria-expanded',String(btn.classList.contains('gc-open')))};
+window.greetingFlip=function(btn){
+ btn.classList.toggle('gc-flipped');
+ const image=btn.querySelector(btn.classList.contains('gc-flipped')?'.gc-back img':'.gc-front img');
+ if(image?.naturalWidth)greetingImageSized(image,btn.classList.contains('gc-flipped')?'flipBack':'flip');
+ else if(!btn.classList.contains('gc-flipped')){
+   const front=btn.querySelector('.gc-front img');if(front?.naturalWidth)greetingImageSized(front,'flip');
+ }
+};
 window.specialArticle=specialArticle=function(o){
  if(o.template!=='greeting')return oldSpecialArticle(o);
  return `<button class="button secondary" onclick="back()">‹ 戻る</button>${greetingContent(o)}<div class="actions"><button class="button secondary" onclick="editor('${o.id}')">編集</button><button class="button danger" onclick="removeItem('${o.id}')">削除</button></div>`;
