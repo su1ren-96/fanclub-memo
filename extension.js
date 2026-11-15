@@ -1,9 +1,16 @@
 /* Fanclub Memo v6: independent channel and SPECIAL article builder */
 const _baseRender = render;
+function renderFiveTabBar(){
+ const nav = document.getElementById('nav');
+ if(!nav)return;
+ const tabs=[['HOME','⌂'],['FAVORITES','♡'],['CHANNEL','▶'],['MY PAGE','♙'],['SETTINGS','⚙']];
+ nav.innerHTML=tabs.map(([p,i])=>`<button class="${page===p?'active':''}" onclick="go('${p}')"><span>${i}</span>${p}</button>`).join('');
+}
 render = function(){
  document.body.classList.toggle('channel-mode',page==='CHANNEL');
- if(page==='CHANNEL') {renderChannel();return;}
+ if(page==='CHANNEL') {renderChannel();renderFiveTabBar();return;}
  _baseRender();
+ renderFiveTabBar();
 };
 const _baseEditor = editor;
 editor = function(recordId){
