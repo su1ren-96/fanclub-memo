@@ -120,4 +120,26 @@ body.channel-mode #nav.bottom button.active{color:#fff!important}
 .ch-short-card img,.ch-short-card .ch-short-blank{width:100%;aspect-ratio:9/16;object-fit:cover;border-radius:11px;background:#303030;display:block}
 .ch-short-card strong{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;line-height:1.4;margin-top:7px;font-size:12px;font-weight:550}
 .ch-short-card small{color:#aaa}
-</style></head><body><header><button class="icon" onclick="searchPage()">⌕</button><b>MAKE NEW WAVE</b><button class="icon" onclick="drawer(true)">☰</button></header><main id="app"></main><nav id="nav" class="bottom"></nav><div id="menu"></div><div id="modal"></div><script src="app.js?v=6.3" defer></script><script src="extension.js?v=6.3" defer></script></body></html>
+
+/* v6.4: stable iPhone presentation outside CHANNEL, preserving user pinch zoom. */
+html{overflow-x:hidden}
+body:not(.channel-mode){overflow-x:clip}
+body:not(.channel-mode) main{width:100%;min-width:0}
+/* iOS Safari auto-zooms inputs whose computed font-size is below 16px. */
+body:not(.channel-mode) input:not([type="checkbox"]):not([type="radio"]),
+body:not(.channel-mode) textarea,
+body:not(.channel-mode) select,
+body:not(.channel-mode) .search{font-size:16px!important;max-width:100%;min-width:0}
+body:not(.channel-mode) .overlay .inner{min-width:0;width:100%}
+/* CHANNEL's own editors also keep a stable scale when keyboard opens. */
+.ch-overlay input:not([type="checkbox"]):not([type="radio"]),.ch-overlay textarea,.ch-overlay select{font-size:16px!important;min-width:0;max-width:100%}
+/* CHANNEL video action menus live in the top right of the metadata row. */
+.ch-video-info,.ch-shelf-video{position:relative}
+.ch-shelf-video{grid-template-columns:minmax(0,42%) minmax(0,1fr) 30px;align-items:start}
+.ch-shelf-video>div:nth-child(2){min-width:0}
+.ch-more.ch-menu-trigger,.ch-shelf-menu.ch-menu-trigger{position:relative;display:flex;align-items:flex-start;justify-content:center;justify-self:end;align-self:start;margin:0;padding:1px 3px 8px;min-height:38px;min-width:30px;font:26px/1 sans-serif;color:#ddd;background:transparent;border:0;border-radius:20px;cursor:pointer;z-index:2}
+.ch-video-info .ch-more{margin-left:auto}
+.ch-card-menu{position:absolute;z-index:6;right:9px;top:37px;min-width:130px;padding:6px 0;background:#292929;color:white;border:1px solid #444;border-radius:12px;box-shadow:0 7px 25px #0009}
+.ch-card-menu button{display:block;color:white;text-align:left;background:none;border:0;padding:10px 15px;width:100%;font-size:14px}
+.ch-card-menu button:active{background:#444}
+</style></head><body><header><button class="icon" onclick="searchPage()">⌕</button><b>MAKE NEW WAVE</b><button class="icon" onclick="drawer(true)">☰</button></header><main id="app"></main><nav id="nav" class="bottom"></nav><div id="menu"></div><div id="modal"></div><script src="app.js?v=6.4" defer></script><script src="extension.js?v=6.4" defer></script></body></html>
