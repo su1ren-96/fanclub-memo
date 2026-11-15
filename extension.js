@@ -111,12 +111,32 @@ function specialArticle(o){
 function specialPhotoView(id,sectionIndex){let o=data.find(x=>x.id===id),src=o?.sections?.[sectionIndex]?.image;if(!src)return;$('#modal').innerHTML=`<div class="viewer"><img src="${src}" alt="写真"><button onclick="dismissOverlay()">✕</button></div>`}
 
 /* Independently stored, YouTube-inspired CHANNEL */
-let channelDB=null,channelEntries=[],channelTab='home',channelSelected=null,channelSettings={name:'チャンネル名',handle:'@my-channel',description:'',subscribers:'',verified:false,banner:'',avatar:'',links:'',featured:''};
+let channelGenres=[],channelGenreExtras=[],channelDB=null,channelEntries=[],channelTab='home',channelSelected=null,channelSettings={name:'チャンネル名',handle:'@my-channel',description:'',subscribers:'',verified:false,banner:'',avatar:'',links:'',featured:''};
 function chStore(mode='readonly'){return channelDB.transaction('entries',mode).objectStore('entries')}
 function chAll(){return new Promise((resolve,reject)=>{let r=chStore().getAll();r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error)})}
 function chPut(v){return new Promise((resolve,reject)=>{let r=chStore('readwrite').put(v);r.onsuccess=resolve;r.onerror=()=>reject(r.error)})}
 function chDel(v){return new Promise((resolve,reject)=>{let r=chStore('readwrite').delete(v);r.onsuccess=resolve;r.onerror=()=>reject(r.error)})}
-async function channelRefresh(){if(!channelDB)return;let arr=await chAll();let settings=arr.find(x=>x.id==='settings');if(settings)channelSettings={...channelSettings,...settings};channelEntries=arr.filter(x=>x.id!=='settings');if(page==='CHANNEL')render()}
+async function channelRefresh(){
+ if(!channelDB)return;
+ let arr=await chAll();
+ let settings=arr.find(x=>x.id==='settings');
+ if(settings)channelSettings={...channelSettings,...settings};
+ channelEntries=arr.filter(x=>x.id!=='settings'&&x.id!=='genre-settings');
+ let saved=arr.find(x=>x.id==='genre-settings');
+ // Discover categories in old uploads, without changing any video data.
+ let discovered=[];
+ for(const item of chSorted(channelEntries)){
+  const name=channelGenre(item);
+  if(!discovered.includes(name))discovered.push(name);
+ }
+ channelGenres=Array.isArray(saved?.names)?[...new Set(saved.names.filter(n=>typeof n==='string'&&n.trim()).map(n=>n.trim()))]:[];
+ let changed=!saved;
+ for(const name of discovered)if(!channelGenres.includes(name)){channelGenres.push(name);changed=true}
+ // Keep new installations usable even if no videos have been saved yet.
+ if(!channelGenres.length){channelGenres=['動画','ショート','ライブ','リリース'];changed=true}
+ if(changed)await chPut({id:'genre-settings',names:channelGenres});
+ if(page==='CHANNEL')render();
+}
 const chRequest=indexedDB.open('FanclubMemoChannelDB',1);
 chRequest.onupgradeneeded=()=>{const d=chRequest.result;if(!d.objectStoreNames.contains('entries'))d.createObjectStore('entries',{keyPath:'id'})};
 chRequest.onsuccess=()=>{channelDB=chRequest.result;channelRefresh()};
@@ -148,26 +168,54 @@ function renderChannel(){
  if(channelSelected){let o=channelEntries.find(x=>x.id===channelSelected);app.innerHTML=o?`<div class="ch-detail"><button class="ch-text-btn" onclick="chBack()">‹ 戻る</button>${o.image?`<img class="ch-detail-image" src="${o.image}" alt="サムネイル">`:'<div class="ch-detail-image ch-blank">▶</div>'}<h1>${e(o.title)}</h1><div class="ch-subline">${e(channelSettings.name)} · ${chViewMeta(o)}${chDate(o.when)} · ${e(chLabel(o.kind))}</div><div class="ch-description">${e(o.description||'')}</div><div class="ch-buttons"><button onclick="channelEntryEditor('${o.id}')">編集</button><button onclick="channelRemove('${o.id}')">削除</button></div></div>`:'<div class="ch-empty">コンテンツが見つかりません。</div>';return}
  let tabs=[['home','ホーム'],['video','動画'],['short','ショート'],['live','ライブ'],['release','リリース']];
  let arr=channelTab==='home'?chSorted(channelEntries):chSorted(channelEntries.filter(x=>x.kind===channelTab));
- app.innerHTML=`<div class="ch-app">${channelProfile()}<div class="ch-tabs" id="chTabs">${tabs.map(([k,v])=>`<button class="${channelTab===k?'current':''}" onclick="chNavTab('${k}')">${v}</button>`).join('')}</div><div class="ch-content-head"><strong>${channelTab==='home'?'ジャンル別':tabs.find(x=>x[0]===channelTab)?.[1]||'動画'}</strong><button onclick="channelEntryEditor()">＋ 追加</button></div>${channelTab==='home'?channelHomeShelves():arr.length?arr.map(channelEntryCard).join(''):'<div class="ch-empty">まだコンテンツがありません。<br>「＋ 追加」から登録できます。</div>'}</div>`;
+ app.innerHTML=`<div class="ch-app">${channelProfile()}<div class="ch-tabs" id="chTabs">${tabs.map(([k,v])=>`<button class="${channelTab===k?'current':''}" onclick="chNavTab('${k}')">${v}</button>`).join('')}</div><div class="ch-content-head"><strong>${channelTab==='home'?'ジャンル別':tabs.find(x=>x[0]===channelTab)?.[1]||'動画'}</strong><div class="ch-head-actions">${channelTab==='home'?'<button onclick="channelGenreManager()">ジャンル管理</button>':''}<button onclick="channelEntryEditor()">＋ 追加</button></div></div>${channelTab==='home'?channelHomeShelves():arr.length?arr.map(channelEntryCard).join(''):'<div class="ch-empty">まだコンテンツがありません。<br>「＋ 追加」から登録できます。</div>'}</div>`;
 }
 function channelGenre(o){return (o.genre||'').trim()||(o.kind==='short'?'ショート':o.kind==='live'?'ライブ':o.kind==='release'?'リリース':'動画')}
 function channelShelfVideo(o){return `<article class="ch-shelf-video" onclick="channelOpen('${o.id}')">${o.image?`<img class="ch-shelf-image" src="${o.image}" alt="">`:'<div class="ch-shelf-image ch-blank">▶</div>'}<div><strong>${e(o.title||'無題')}</strong><div class="ch-shelf-meta">${e(channelSettings.name)}</div><div class="ch-shelf-meta">${chViewMeta(o)}${chDate(o.when)}</div></div><button type="button" class="ch-shelf-menu ch-menu-trigger" aria-label="動画の操作" onclick="chToggleMenu(event,'${o.id}')">⋮</button></article>`}
 function channelShortCard(o){return `<article class="ch-short-card" onclick="channelOpen('${o.id}')">${o.image?`<img src="${o.image}" alt="">`:'<div class="ch-short-blank ch-blank">▶</div>'}<strong>${e(o.title||'無題')}</strong><small>${chViewMeta(o)}${chDate(o.when)}</small></article>`}
+function chToggleShelf(index){
+ const more=document.getElementById('ch-shelf-more-'+index),button=document.getElementById('ch-shelf-toggle-'+index);
+ if(!more||!button)return;
+ more.hidden=!more.hidden;
+ button.setAttribute('aria-expanded',String(!more.hidden));
+ button.innerHTML=more.hidden?'⌄ すべて表示':'⌃ 折りたたむ';
+}
 function channelHomeShelves(){
  const all=chSorted(channelEntries);
  if(!all.length)return '<div class="ch-empty">まだコンテンツがありません。<br>「＋ 追加」から登録できます。</div>';
- let groups=new Map();
- for(const o of all){let genre=channelGenre(o);if(!groups.has(genre))groups.set(genre,[]);groups.get(genre).push(o)}
- return [...groups.entries()].map(([genre,entries])=>{
-  const shorts=entries.every(o=>o.kind==='short');
-  return `<section class="ch-shelf"><div class="ch-shelf-title"><h2>${e(genre)}</h2></div>${shorts?`<div class="ch-shorts">${entries.map(channelShortCard).join('')}</div>`:entries.map(channelShelfVideo).join('')}</section>`;
+ const groups=new Map();
+ for(const item of all){const genre=channelGenre(item);if(!groups.has(genre))groups.set(genre,[]);groups.get(genre).push(item)}
+ // Genre-settings controls the section order, regardless of publish dates.
+ const names=[...channelGenres.filter(n=>groups.has(n)),...groups.keys()].filter((n,i,a)=>a.indexOf(n)===i);
+ return names.map((name,index)=>{
+  const entries=groups.get(name),shorts=entries.every(o=>o.kind==='short');
+  const content=list=>shorts?`<div class="ch-shorts">${list.map(channelShortCard).join('')}</div>`:list.map(channelShelfVideo).join('');
+  return `<section class="ch-shelf"><div class="ch-shelf-title"><h2>${e(name)}</h2></div>${content(entries.slice(0,3))}${entries.length>3?`<div id="ch-shelf-more-${index}" hidden>${content(entries.slice(3))}</div><button type="button" id="ch-shelf-toggle-${index}" class="ch-shelf-expand" aria-expanded="false" onclick="chToggleShelf(${index})">⌄ すべて表示</button>`:''}</section>`;
  }).join('');
 }
+function channelGenreManager(){
+ if(!channelDB)return;
+ $('#modal').innerHTML=`<div class="overlay ch-overlay"><div class="inner"><div class="heading"><h1>ホームのジャンル管理</h1><button type="button" class="icon" onclick="channelDismiss()">✕</button></div><p class="muted">ここで設定した順番でジャンルを固定表示します。ジャンルを追加すると、投稿画面の選択肢にも反映されます。</p><div id="chGenreList"></div><form onsubmit="chAddGenre(event)"><label class="field">新しいジャンル名<input name="name" id="chNewGenre" maxlength="100" placeholder="例：Music Video" required></label><button type="submit" class="button">＋ ジャンルを追加</button></form><div class="actions"><button type="button" class="button secondary" onclick="channelDismiss()">完了して戻る</button></div></div></div>`;
+ chGenreManagerList();
+}
+function chGenreManagerList(){
+ const list=document.getElementById('chGenreList');if(!list)return;
+ list.innerHTML=channelGenres.map((name,i)=>`<div class="ch-genre-row"><span class="ch-genre-order">${i+1}</span><span class="ch-genre-name">${e(name)}</span><button type="button" aria-label="上に移動" ${i===0?'disabled':''} onclick="chMoveGenre(${i},-1)">↑</button><button type="button" aria-label="下に移動" ${i===channelGenres.length-1?'disabled':''} onclick="chMoveGenre(${i},1)">↓</button><button type="button" aria-label="名前を変更" onclick="chRenameGenre(${i})">編集</button><button type="button" aria-label="ジャンルを削除" onclick="chDeleteGenre(${i})">削除</button></div>`).join('');
+}
+async function chSaveGenres(){await chPut({id:'genre-settings',names:[...channelGenres]})}
+async function chMoveGenre(i,d){let j=i+d;if(j<0||j>=channelGenres.length)return;[channelGenres[i],channelGenres[j]]=[channelGenres[j],channelGenres[i]];await chSaveGenres();chGenreManagerList()}
+async function chAddGenre(event){event.preventDefault();const input=document.getElementById('chNewGenre'),name=input.value.trim();if(!name)return;if(channelGenres.includes(name))return alert('同じ名前のジャンルが登録されています。');channelGenres.push(name);await chSaveGenres();input.value='';chGenreManagerList()}
+async function chRenameGenre(i){const old=channelGenres[i],name=prompt('新しいジャンル名',old)?.trim();if(!name||name===old)return;if(channelGenres.includes(name))return alert('同じ名前のジャンルが登録されています。');try{
+ // Reassign existing posts before updating the category registry.
+ for(const item of channelEntries)if(channelGenre(item)===old){item.genre=name;await chPut(item)}
+ channelGenres[i]=name;await chSaveGenres();chGenreManagerList();
+}catch(err){alert('名前変更に失敗しました: '+err.message)}}
+async function chDeleteGenre(i){const name=channelGenres[i];const count=channelEntries.filter(item=>channelGenre(item)===name).length;if(count)return alert(`「${name}」には${count}件の動画があります。先に各動画を別のジャンルへ変更してください。`);if(!confirm(`「${name}」を削除しますか？`))return;channelGenres.splice(i,1);await chSaveGenres();chGenreManagerList()}
 function chLabel(kind){return {video:'動画',short:'ショート',live:'ライブ',release:'リリース'}[kind]||'動画'}
 let chEditing=null;
 function channelSettingsEditor(){let c=channelSettings;$('#modal').innerHTML=`<div class="overlay ch-overlay"><div class="inner"><div class="heading"><h1>チャンネル設定</h1><button class="icon" onclick="channelDismiss()">✕</button></div><form id="chSettingsForm" onsubmit="saveChannelSettings(event)"><label class="field">チャンネル名<input name="name" value="${e(c.name)}" required></label><label class="field">ハンドル名<input name="handle" value="${e(c.handle)}"></label><label class="field">登録者数（表示文字列）<input name="subscribers" value="${e(c.subscribers)}" placeholder="例：3.6万人"></label><label class="field">紹介文<textarea name="description">${e(c.description)}</textarea></label><label class="field">外部リンクの表示文字列<input name="links" value="${e(c.links)}" placeholder="例：公式サイト"></label><label class="field"><input type="checkbox" name="verified" ${c.verified?'checked':''} style="width:auto"> 認証バッジを表示</label><label class="field">横長のチャンネルバナー${c.banner?`<img class="ch-field-preview" src="${c.banner}" alt="現在のバナー">`:''}<input type="file" id="chBannerFile" accept="image/*"></label><label class="field">プロフィール画像${c.avatar?`<img class="ch-field-avatar" src="${c.avatar}" alt="現在のアイコン">`:''}<input type="file" id="chAvatarFile" accept="image/*"></label><div class="actions"><button class="button" type="submit">保存する</button><button type="button" class="button secondary" onclick="channelDismiss()">キャンセル</button></div></form></div></div>`}
 async function saveChannelSettings(ev){ev.preventDefault();document.activeElement?.blur?.();let d=new FormData(ev.target);let s={...channelSettings,id:'settings'};for(let k of ['name','handle','subscribers','description','links'])s[k]=d.get(k)||'';s.verified=d.has('verified');try{if($('#chBannerFile').files[0])s.banner=await readFile($('#chBannerFile').files[0]);if($('#chAvatarFile').files[0])s.avatar=await readFile($('#chAvatarFile').files[0]);await chPut(s);channelDismiss();await channelRefresh()}catch(ex){alert('設定を保存できませんでした: '+ex.message)}}
-function channelEntryEditor(id){let o=id?channelEntries.find(x=>x.id===id):null;chEditing=id||null;let kind=o?.kind||(['video','short','live','release'].includes(channelTab)?channelTab:'video');$('#modal').innerHTML=`<div class="overlay ch-overlay"><div class="inner"><div class="heading"><h1>${o?'コンテンツ編集':'新規追加'} · CHANNEL</h1><button class="icon" onclick="channelDismiss()">✕</button></div><form id="channelEntryForm" onsubmit="saveChannelEntry(event)"><label class="field">種類<select name="kind">${[['video','動画'],['short','ショート'],['live','ライブ'],['release','リリース']].map(([k,l])=>`<option value="${k}" ${kind===k?'selected':''}>${l}</option>`).join('')}</select></label><label class="field">ホームのジャンル名<input name="genre" value="${e(o?.genre||'')}" placeholder="例：NCT PRESENTS / Music Video / NCT Compilations"><small>同じ名前を入力するとホームで一つのジャンルにまとまります。未入力の場合は種類別に表示します。</small></label><label class="field">タイトル<input name="title" value="${e(o?.title||'')}" required></label><label class="field">公開日時<input name="when" type="datetime-local" value="${e(o?.when||today())}"></label><label class="field">再生回数（任意）<input type="number" name="views" min="0" step="1" inputmode="numeric" placeholder="例：13260000" value="${e(o?.views??'')}"><small>入力した数値を「1326万回視聴」などに変換して表示します。未入力なら表示しません。</small></label><label class="field">説明文<textarea name="description">${e(o?.description||'')}</textarea></label><label class="field">サムネイル画像${o?.image?`<img class="ch-field-preview" src="${o.image}" alt="現在のサムネイル">`:''}<input type="file" id="chEntryImage" accept="image/*"></label><div class="actions"><button class="button" type="submit">保存する</button><button class="button secondary" type="button" onclick="channelDismiss()">キャンセル</button></div></form></div></div>`}
+function channelEntryEditor(id){let o=id?channelEntries.find(x=>x.id===id):null;chEditing=id||null;let kind=o?.kind||(['video','short','live','release'].includes(channelTab)?channelTab:'video');$('#modal').innerHTML=`<div class="overlay ch-overlay"><div class="inner"><div class="heading"><h1>${o?'コンテンツ編集':'新規追加'} · CHANNEL</h1><button class="icon" onclick="channelDismiss()">✕</button></div><form id="channelEntryForm" onsubmit="saveChannelEntry(event)"><label class="field">種類<select name="kind">${[['video','動画'],['short','ショート'],['live','ライブ'],['release','リリース']].map(([k,l])=>`<option value="${k}" ${kind===k?'selected':''}>${l}</option>`).join('')}</select></label><label class="field">ホームのジャンル<select name="genre" required>${[...new Set([...channelGenres,...(o?[channelGenre(o)]:[])])].map(name=>`<option value="${e(name)}" ${name===(o?channelGenre(o):(channelGenres[0]||'動画'))?'selected':''}>${e(name)}</option>`).join('')}</select><small>ジャンルはホームの「ジャンル管理」で追加・並び替えできます。</small></label><label class="field">タイトル<input name="title" value="${e(o?.title||'')}" required></label><label class="field">公開日時<input name="when" type="datetime-local" value="${e(o?.when||today())}"></label><label class="field">再生回数（任意）<input type="number" name="views" min="0" step="1" inputmode="numeric" placeholder="例：13260000" value="${e(o?.views??'')}"><small>入力した数値を「1326万回視聴」などに変換して表示します。未入力なら表示しません。</small></label><label class="field">説明文<textarea name="description">${e(o?.description||'')}</textarea></label><label class="field">サムネイル画像${o?.image?`<img class="ch-field-preview" src="${o.image}" alt="現在のサムネイル">`:''}<input type="file" id="chEntryImage" accept="image/*"></label><div class="actions"><button class="button" type="submit">保存する</button><button class="button secondary" type="button" onclick="channelDismiss()">キャンセル</button></div></form></div></div>`}
 async function saveChannelEntry(ev){ev.preventDefault();document.activeElement?.blur?.();let d=new FormData(ev.target);let prev=chEditing?channelEntries.find(x=>x.id===chEditing):null;let o=prev?{...prev}:{id:uuid(),image:''};for(let k of ['title','description','kind','genre','when'])o[k]=d.get(k)||'';let rawViews=String(d.get('views')||'').trim();if(rawViews&&(!/^\d+$/.test(rawViews)||!Number.isSafeInteger(Number(rawViews)))){alert('再生回数は0以上の整数で入力してください');return;}o.views=rawViews===''?'':Number(rawViews);try{let file=$('#chEntryImage').files[0];if(file)o.image=await readFile(file);await chPut(o);channelDismiss();channelSelected=o.id;await channelRefresh()}catch(err){alert('保存できませんでした: '+err.message)}}
 async function channelRemove(id){if(!confirm('このCHANNELコンテンツを削除しますか？'))return;await chDel(id);channelSelected=null;await channelRefresh()}
 function channelDismiss(){dismissOverlay();chEditing=null}
