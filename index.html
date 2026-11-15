@@ -96,4 +96,28 @@ body.channel-mode .bottom button span{font-size:23px}
 .sp-event .sp-article-hero{border-radius:3px}.sp-event .sp-article-head h1{font-weight:850}
 @media(max-width:370px){.bottom button{font-size:9px}.ch-tabs button{padding:11px}.ch-profile h1{font-size:19px}.ch-avatar{width:67px;height:67px;flex-basis:67px}}
 
-</style></head><body><header><button class="icon" onclick="searchPage()">⌕</button><b>MAKE NEW WAVE</b><button class="icon" onclick="drawer(true)">☰</button></header><main id="app"></main><nav id="nav" class="bottom"></nav><div id="menu"></div><div id="modal"></div><script src="app.js?v=6.1" defer></script><script src="extension.js?v=6.1" defer></script></body></html>
+
+/* v6.3 - Five tabs in a single row on iPhone, including CHANNEL */
+#nav.bottom{display:grid!important;grid-template-columns:repeat(5,minmax(0,1fr))!important;grid-auto-flow:row;align-items:start;width:100%;gap:0;padding-left:0;padding-right:0}
+#nav.bottom button{min-width:0;width:100%;padding:2px 1px;white-space:nowrap;font-size:clamp(8px,2.3vw,11px);line-height:1.5;letter-spacing:-.02em;text-align:center}
+#nav.bottom button span{display:block;font-size:clamp(18px,5.4vw,23px);line-height:1.35;margin-bottom:4px}
+body.channel-mode #nav.bottom{background:#1b1b1b}
+body.channel-mode #nav.bottom button{color:#bbb}
+body.channel-mode #nav.bottom button.active{color:#fff!important}
+/* Independently managed channel home shelves */
+.ch-shelf{border-top:1px solid #303030;padding:15px 0 14px}
+.ch-shelf-title{display:flex;align-items:center;justify-content:space-between;padding:0 14px 12px;gap:12px}
+.ch-shelf-title h2{font-size:18px;margin:0;color:#f5f5f5;line-height:1.4}
+.ch-shelf-title button{background:#303030;color:#fff;border-radius:20px;padding:7px 12px;white-space:nowrap}
+.ch-shelf-video{display:grid;grid-template-columns:minmax(100px,42%) minmax(0,1fr);gap:11px;align-items:start;margin:0 13px 15px;cursor:pointer}
+.ch-shelf-video .ch-shelf-image{width:100%;aspect-ratio:16/9;object-fit:cover;border-radius:9px;background:#292929;display:block}
+.ch-shelf-video strong{font-weight:500;font-size:13px;line-height:1.4;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}
+.ch-shelf-video .ch-shelf-meta{font-size:11px;color:#aaa;margin-top:5px}
+.ch-shelf-video .ch-shelf-menu{font-size:20px;color:#aaa}
+.ch-shorts{display:flex;overflow-x:auto;gap:10px;padding:0 13px 12px;scroll-snap-type:x mandatory;scrollbar-width:none}
+.ch-shorts::-webkit-scrollbar{display:none}
+.ch-short-card{flex:0 0 42%;max-width:210px;min-width:125px;scroll-snap-align:start;cursor:pointer}
+.ch-short-card img,.ch-short-card .ch-short-blank{width:100%;aspect-ratio:9/16;object-fit:cover;border-radius:11px;background:#303030;display:block}
+.ch-short-card strong{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;line-height:1.4;margin-top:7px;font-size:12px;font-weight:550}
+.ch-short-card small{color:#aaa}
+</style></head><body><header><button class="icon" onclick="searchPage()">⌕</button><b>MAKE NEW WAVE</b><button class="icon" onclick="drawer(true)">☰</button></header><main id="app"></main><nav id="nav" class="bottom"></nav><div id="menu"></div><div id="modal"></div><script src="app.js?v=6.3" defer></script><script src="extension.js?v=6.3" defer></script></body></html>
