@@ -179,4 +179,21 @@ body:not(.channel-mode) .overlay .inner{min-width:0;width:100%}
 .gc-envelope.gc-open .gc-card{transform:translate(-50%,-126px) scale(1);z-index:4;opacity:1;visibility:visible;transition:transform .65s cubic-bezier(.2,.8,.2,1) .20s,opacity .18s ease .15s,visibility 0s}
 .gc-envelope.gc-open .gc-seal{opacity:0}
 @media(prefers-reduced-motion:reduce){.gc-envelope .gc-flap,.gc-envelope .gc-card,.gc-flip,.gc-flip-inner{transition-duration:.01ms!important;transition-delay:0s!important}}
-</style></head><body><header><button class="icon" onclick="searchPage()">⌕</button><b>MAKE NEW WAVE</b><button class="icon" onclick="drawer(true)">☰</button></header><main id="app"></main><nav id="nav" class="bottom"></nav><div id="menu"></div><div id="modal"></div><script src="app.js?v=6.7" defer></script><script src="extension.js?v=6.7" defer></script><script src="greeting.js?v=6.7" defer></script></body></html>
+</style><style id="message-v68">
+/* MESSAGE-only fixed chat composer, above the existing 5-tab bar. */
+body:has(#messageComposer) main{padding-bottom:calc(240px + env(safe-area-inset-bottom));}
+.message-sender{display:flex;align-items:center;gap:6px;font-weight:700;font-size:12px;margin:0 0 4px;flex-wrap:wrap}
+.message-sender .pill{font-size:10px;letter-spacing:.02em;padding:1px 7px}
+.message-composer{position:fixed;left:0;right:0;bottom:calc(64px + env(safe-area-inset-bottom));z-index:11;background:#f9f4fced;backdrop-filter:blur(18px);border-top:1px solid #fff;box-shadow:0 -6px 18px #7c638217;padding:7px max(10px,env(safe-area-inset-left)) 8px max(10px,env(safe-area-inset-right));display:flex;flex-direction:column;gap:5px}
+.message-compose-top,.message-compose-bottom{display:flex;align-items:center;gap:8px;max-width:720px;width:100%;margin:auto}
+.message-compose-top label{font-size:11px;color:#746782;white-space:nowrap}
+.message-compose-top select{flex:1;min-width:0;max-width:100%;font-size:16px;padding:4px 8px;border-radius:10px;border:1px solid #dfd5e9;background:white;color:#51435f}
+.message-compose-bottom{background:white;border:1px solid #e7dbef;border-radius:22px;padding:5px 6px}
+.message-compose-bottom textarea{flex:1;min-width:0;resize:none;height:39px;max-height:110px;font-size:16px;line-height:1.4;border:0;outline:none;padding:8px 3px;background:transparent;color:#4c4258}
+.message-attach,.message-send{flex:0 0 35px;width:35px;height:35px;border-radius:50%;background:#eee3fa;color:#6c5484;font-size:23px;display:grid;place-items:center}
+.message-send{background:#dbcafa}.message-send:disabled{opacity:.4}
+.message-attachments{display:flex;align-items:center;gap:10px;max-width:720px;width:100%;margin:auto;min-height:14px;font-size:11px;color:#746782}
+.message-attachments button{background:transparent;color:#746782;padding:0 6px;font-size:12px}
+.message-attachments span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@media(max-width:390px){.message-composer{bottom:calc(60px + env(safe-area-inset-bottom))}}
+</style></head><body><header><button class="icon" onclick="searchPage()">⌕</button><b>MAKE NEW WAVE</b><button class="icon" onclick="drawer(true)">☰</button></header><main id="app"></main><nav id="nav" class="bottom"></nav><div id="menu"></div><div id="modal"></div><script src="app.js?v=6.8" defer></script><script src="extension.js?v=6.8" defer></script><script src="greeting.js?v=6.8" defer></script></body></html>
