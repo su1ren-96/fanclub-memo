@@ -224,7 +224,7 @@ backup = async function(){
  try{
   let channel=channelDB?await chAll():[];
   const obj={app:'Fanclub Memo',version:2,created:new Date().toISOString(),items:data,
-   channelItems:channel,accounts:accounts(),profile:{name:localStorage.memberName||'',no:localStorage.memberNo||'',date:localStorage.memberDate||''}};
+   channelItems:channel,accounts:accounts(),wardrobeOrder:wardrobeGetIds(),wardrobeSort:wardrobeSortMode(),profile:{name:localStorage.memberName||'',no:localStorage.memberNo||'',date:localStorage.memberDate||''}};
   let b=new Blob([JSON.stringify(obj)],{type:'application/json'}),url=URL.createObjectURL(b),a=document.createElement('a');
   a.href=url;a.download='fanclub-memo-backup-'+new Date().toISOString().slice(0,10)+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),10000);
  }catch(err){alert('バックアップに失敗しました: '+err.message)}
@@ -238,6 +238,8 @@ restore = async function(file){
   for(let item of b.items)await put(item);
   if(b.profile){localStorage.memberName=b.profile.name||'';localStorage.memberNo=b.profile.no||'';localStorage.memberDate=b.profile.date||''}
   if(Array.isArray(b.accounts))localStorage.setItem('fc_accounts',JSON.stringify(b.accounts));
+  if(Array.isArray(b.wardrobeOrder))localStorage.setItem('fc_wardrobe_order_v1',JSON.stringify(b.wardrobeOrder));
+  if(['new','old','custom'].includes(b.wardrobeSort))localStorage.setItem('fc_wardrobe_sort_v1',b.wardrobeSort);
   if(Array.isArray(b.channelItems)){
    if(!channelDB)throw Error('CHANNELの保存領域が開けていません。後で再試行してください');
    for(let item of b.channelItems)await chPut(item);
