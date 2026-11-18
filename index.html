@@ -196,4 +196,11 @@ body:has(#messageComposer) main{padding-bottom:calc(240px + env(safe-area-inset-
 .message-attachments button{background:transparent;color:#746782;padding:0 6px;font-size:12px}
 .message-attachments span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 @media(max-width:390px){.message-composer{bottom:calc(60px + env(safe-area-inset-bottom))}}
-</style></head><body><header><button class="icon" onclick="searchPage()">⌕</button><b>MAKE NEW WAVE</b><button class="icon" onclick="drawer(true)">☰</button></header><main id="app"></main><nav id="nav" class="bottom"></nav><div id="menu"></div><div id="modal"></div><script src="app.js?v=6.8" defer></script><script src="extension.js?v=6.8" defer></script><script src="greeting.js?v=6.8" defer></script></body></html>
+/* Greeting card text color overrides: scoped only to SPECIAL greeting cards */
+.gc-detail .gc-title small{color:var(--gc-heading-color,#957997)}
+.gc-detail .gc-title h1{color:var(--gc-title-color,#4e4057)}
+.gc-detail .gc-date{color:var(--gc-date-color,#8d8097)}
+.gc-detail .gc-message,.gc-detail .gc-signature{color:var(--gc-message-color,#4e4057)}
+.gc-color-controls{padding:10px 12px 14px;border:1px solid #e6d8ee;border-radius:14px;background:#ffffff66;margin:12px 0}
+.gc-color-controls input[type=color]{min-height:46px;cursor:pointer}
+</style></head><body><header><button class="icon" onclick="searchPage()">⌕</button><b>MAKE NEW WAVE</b><button class="icon" onclick="drawer(true)">☰</button></header><main id="app"></main><nav id="nav" class="bottom"></nav><div id="menu"></div><div id="modal"></div><script src="app.js?v=6.8" defer></script><script src="extension.js?v=6.8" defer></script><script src="greeting.js?v=6.10" defer></script></body></html>

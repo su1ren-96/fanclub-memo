@@ -1,4 +1,4 @@
-/* Fanclub Memo 6.7 - GREETING CARD layout fix. Additive; no storage migrations. */
+/* Fanclub Memo 6.9 - GREETING CARD display adjustments. Additive; no storage migrations. */
 (function(){
 'use strict';
 SPECIAL_NAMES.greeting='デジタルグリーティングカード';
@@ -7,7 +7,16 @@ const oldSpecialArticle=specialArticle;
 const oldTemplateChange=specialTemplateChange;
 let draft=null;
 let editingId=null;
-const defaultGreeting=()=>({mode:'envelope',background:'#f5eaf7',envelopeColor:'#e8c9e6',envelopeDesign:'simple',front:'',back:'',message:'',signature:''});
+const defaultGreeting=()=>({mode:'envelope',background:'#f5eaf7',envelopeColor:'#e8c9e6',envelopeDesign:'simple',front:'',back:'',message:'',signature:'',headingColor:'',titleColor:'',dateColor:'',messageColor:''});
+// Existing cards have no color preferences: select a legible color from the background.
+function gcValidColor(v){return typeof v==='string'&&/^#[0-9a-fA-F]{6}$/.test(v)}
+function gcAutoTextColor(bg){
+ if(!gcValidColor(bg))return '#4e4057';
+ const rgb=[1,3,5].map(i=>parseInt(bg.slice(i,i+2),16)/255).map(v=>v<=.04045?v/12.92:((v+.055)/1.055)**2.4);
+ const luminance=.2126*rgb[0]+.7152*rgb[1]+.0722*rgb[2];
+ return luminance<.20?'#ffffff':'#4e4057';
+}
+function gcColor(value,background){return gcValidColor(value)?value:gcAutoTextColor(background)}
 const getRecord=id=>id?data.find(x=>x.id===id):null;
 window.specialEditor=specialEditor=function(id){
  const o=getRecord(id);
@@ -33,6 +42,9 @@ function greetingCapture(){
  draft.envelopeDesign=val('gcEnvelopeDesign',draft.envelopeDesign);
  draft.message=val('gcMessage',draft.message);
  draft.signature=val('gcSignature',draft.signature);
+ for(const [key,id] of [['headingColor','gcHeadingColor'],['titleColor','gcTitleColor'],['dateColor','gcDateColor'],['messageColor','gcMessageColor']]){
+  const picker=document.getElementById(id);if(picker)draft[key]=picker.value;
+ }
 }
 function openGreetingEditor(id){
  const o=getRecord(id);editingId=id||null;
@@ -69,11 +81,21 @@ function drawGreetingEditor(){
  <label class="field">メッセージ（任意）<textarea id="gcMessage" placeholder="カードに添えるメッセージ">${e(s.message)}</textarea></label>
  <label class="field">署名・差出人名（任意）<input id="gcSignature" value="${e(s.signature)}"></label>
  <label class="field">背景色<input id="gcBackground" type="color" value="${e(s.background)}"></label>
+ <div class="gc-color-controls"><p class="muted">文字色（背景が濃い場合は白など、自由に変更できます）</p>
+ <label class="field">「GREETING CARD」の見出し色<input id="gcHeadingColor" type="color" value="${gcColor(s.headingColor,s.background)}"></label>
+ <label class="field">タイトルの文字色<input id="gcTitleColor" type="color" value="${gcColor(s.titleColor,s.background)}"></label>
+ <label class="field">日付の文字色<input id="gcDateColor" type="color" value="${gcColor(s.dateColor,s.background)}"></label>
+ <label class="field">メッセージ・署名の文字色<input id="gcMessageColor" type="color" value="${gcColor(s.messageColor,s.background)}"></label>
+ <button type="button" class="button secondary" onclick="greetingAutoTextColors()">背景に合わせて文字色を自動設定</button></div>
  ${envelope?`<label class="field">封筒の色<input id="gcEnvelopeColor" type="color" value="${e(s.envelopeColor)}"></label>
  <label class="field">封筒のデザイン<select id="gcEnvelopeDesign"><option value="simple" ${s.envelopeDesign==='simple'?'selected':''}>シンプル</option><option value="floral" ${s.envelopeDesign==='floral'?'selected':''}>フラワー</option><option value="elegant" ${s.envelopeDesign==='elegant'?'selected':''}>エレガント</option></select></label>`:''}
  <div class="actions"><button type="button" class="button secondary" onclick="greetingPreview()">プレビュー</button><button type="button" class="button" onclick="greetingSave()">保存する</button><button type="button" class="button secondary" onclick="greetingCancel()">キャンセル</button></div>
  <p class="muted">プレビューでは未保存の変更を確認できます。再生用の動画ファイルや追加ライブラリは使用しません。</p></div></div>`;
 }
+window.greetingAutoTextColors=function(){
+ const bg=document.getElementById('gcBackground')?.value||draft?.background;const color=gcAutoTextColor(bg);
+ for(const id of ['gcHeadingColor','gcTitleColor','gcDateColor','gcMessageColor']){const el=document.getElementById(id);if(el)el.value=color;}
+};
 window.greetingCancel=function(){greetingCapture();if(!confirm('保存せずに編集画面を閉じますか？'))return;draft=null;editingId=null;dismissOverlay()};
 const readImageInput=async id=>{const f=document.getElementById(id)?.files?.[0];return f?await readFile(f):null};
 async function collectGreetingImages(){
@@ -97,7 +119,7 @@ window.greetingSave=async function(){
   const original=getRecord(editingId);
   const o=original?{...original}:{id:uuid(),type:'SPECIAL',images:[],fav:false,replies:[]};
   o.title=s.title.trim();o.when=s.when;o.template='greeting';o.body=s.message;
-  o.greeting={mode:s.mode,background:s.background,envelopeColor:s.envelopeColor,envelopeDesign:s.envelopeDesign,front:s.front,back:s.back,message:s.message,signature:s.signature};
+  o.greeting={mode:s.mode,background:s.background,envelopeColor:s.envelopeColor,envelopeDesign:s.envelopeDesign,front:s.front,back:s.back,message:s.message,signature:s.signature,headingColor:s.headingColor,titleColor:s.titleColor,dateColor:s.dateColor,messageColor:s.messageColor};
   o.images=[s.front];
   await put(o);
   draft=null;editingId=null;specialDraft=null;specialEditing=null;
@@ -107,9 +129,9 @@ window.greetingSave=async function(){
 function greetingContent(o,preview=false){
  const g={...defaultGreeting(),...(o.greeting||{})};
  const flip=g.mode==='flip';
- let card=flip?`<button type="button" class="gc-flip" onclick="greetingFlip(this)" aria-label="カードの表裏を切り替える"><span class="gc-flip-inner"><span class="gc-face gc-front"><img src="${g.front}" alt="表面" onload="greetingImageSized(this,'flip')"></span><span class="gc-face gc-back">${g.back?`<img src="${g.back}" alt="裏面" onload="greetingImageSized(this,'flipBack')">`:`<span class="gc-back-message">${e(g.message||'MESSAGE')}<br><small>${e(g.signature)}</small></span>`}</span></span></button><p class="gc-hint">カードをタップすると裏返ります</p>`:
+ let card=flip?`<button type="button" class="gc-flip" ${g.back?`onclick="greetingFlip(this)" aria-label="カードの表裏を切り替える"`:`aria-label="カードの表面" style="cursor:default"`}><span class="gc-flip-inner"><span class="gc-face gc-front"><img src="${g.front}" alt="表面" onload="greetingImageSized(this,'flip')"></span>${g.back?`<span class="gc-face gc-back"><img src="${g.back}" alt="裏面" onload="greetingImageSized(this,'flipBack')"></span>`:''}</span></button>`:
  `<div class="gc-envelope-stage"><button type="button" class="gc-envelope gc-${g.envelopeDesign}" style="--env-color:${e(g.envelopeColor)}" onclick="greetingOpen(this)" aria-label="封筒を開く"><span class="gc-flap"></span><span class="gc-pocket"></span><span class="gc-card"><img src="${g.front}" alt="グリーティングカード" onload="greetingImageSized(this,'envelope')"></span><span class="gc-seal">✉</span></button><p class="gc-hint">封筒をタップして開く・閉じる</p></div>`;
- return `<section class="gc-detail" style="--gc-bg:${e(g.background)}"><div class="gc-title"><small>GREETING CARD</small><h1>${e(o.title)}</h1><div class="meta">${day(o.when)}</div></div>${card}${g.message?`<div class="gc-message">${e(g.message)}</div>`:''}${g.signature?`<div class="gc-signature">${e(g.signature)}</div>`:''}</section>`;
+ return `<section class="gc-detail" style="--gc-bg:${e(g.background)};--gc-heading-color:${gcColor(g.headingColor,g.background)};--gc-title-color:${gcColor(g.titleColor,g.background)};--gc-date-color:${gcColor(g.dateColor,g.background)};--gc-message-color:${gcColor(g.messageColor,g.background)}"><div class="gc-title"><small>GREETING CARD</small><h1>${e(o.title)}</h1></div>${card}<div class="meta gc-date">${day(o.when)}</div>${g.message?`<div class="gc-message">${e(g.message)}</div>`:''}${g.signature?`<div class="gc-signature">${e(g.signature)}</div>`:''}</section>`;
 }
 // Size only the viewing frame. Never change stored images or existing records.
 function fitCard(img, envelope){
