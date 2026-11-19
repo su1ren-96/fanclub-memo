@@ -208,12 +208,12 @@ body:has(#messageComposer) main{padding-bottom:calc(240px + env(safe-area-inset-
 .wardrobe-filter{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:2px 0 18px}
 .wardrobe-filter .search{flex:1 1 120px;min-width:0;margin-top:0}
 .wardrobe-filter .button{flex:0 0 auto;white-space:nowrap}
-.wardrobe-list{display:flex;flex-direction:column;gap:25px}
-.wardrobe-cover{cursor:pointer;border:0;background:none;padding:0;margin:0;display:block}
+.wardrobe-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:12px;row-gap:22px;align-items:start}
+.wardrobe-cover{cursor:pointer;border:0;background:none;padding:0;margin:0;display:block;min-width:0}
 .wardrobe-cover>img{display:block;width:100%;height:auto;max-height:none;object-fit:contain;border-radius:5px;box-shadow:0 7px 22px #6d5d811a;background:transparent}
-.wardrobe-cover-heading{display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:10px 2px 0}
-.wardrobe-cover-heading h3{margin:0;font-size:16px;line-height:1.5}
-.wardrobe-cover-heading span{font-size:10px;letter-spacing:1px;color:#8d8097;white-space:nowrap}
+.wardrobe-cover-heading{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:2px 6px;padding:7px 2px 0;min-width:0}
+.wardrobe-cover-heading h3{margin:0;font-size:13px;line-height:1.5;overflow-wrap:anywhere}
+.wardrobe-cover-heading span{font-size:9px;letter-spacing:.5px;color:#8d8097;white-space:nowrap}
 .wardrobe-empty-cover{display:grid;place-items:center;min-height:140px;background:#ffffff66;border-radius:8px;color:#9687a0}
 .wardrobe-detail-label{font-size:11px;letter-spacing:2px;color:#83728f;margin:18px 0 10px}
 .wardrobe-pages{width:100%;min-height:80px;display:flex;justify-content:center;align-items:center;touch-action:pan-y;overflow:hidden}
@@ -229,4 +229,4 @@ body:has(#messageComposer) main{padding-bottom:calc(240px + env(safe-area-inset-
 .wardrobe-sort-row>strong{flex:1;min-width:0;font-size:12px;overflow-wrap:anywhere}
 .wardrobe-sort-row .button{padding:6px 8px;min-width:28px;font-size:13px}
 .wardrobe-sort-row .button:disabled{opacity:.35}
-</style></head><body><header><button class="icon" onclick="searchPage()">⌕</button><b>MAKE NEW WAVE</b><button class="icon" onclick="drawer(true)">☰</button></header><main id="app"></main><nav id="nav" class="bottom"></nav><div id="menu"></div><div id="modal"></div><script src="app.js?v=6.11" defer></script><script src="extension.js?v=6.8" defer></script><script src="greeting.js?v=6.10" defer></script></body></html>
+</style></head><body><header><button class="icon" onclick="searchPage()">⌕</button><b>MAKE NEW WAVE</b><button class="icon" onclick="drawer(true)">☰</button></header><main id="app"></main><nav id="nav" class="bottom"></nav><div id="menu"></div><div id="modal"></div><script src="app.js?v=6.12" defer></script><script src="extension.js?v=6.8" defer></script><script src="greeting.js?v=6.10" defer></script></body></html>
