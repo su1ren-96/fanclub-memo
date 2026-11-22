@@ -17,20 +17,29 @@ function appendMissing(layout,count){
  const missing=Array.from({length:count},(_,i)=>i).filter(i=>!used.has(i));
  return layout+(missing.length?'\n\n'+missing.map(tag).join('\n\n'):'');
 }
+// Convert only escaped plain text to safe clickable HTTP(S) links.
+function linkifyPlain(value){
+ const escaped=e(value);
+ return escaped.replace(/https?:\/\/[^\s<>"']+/gi,found=>{
+   const match=found.match(/^(.*?)([、。，．！？!?）)\]」』]+)?$/);
+   const link=match?match[1]:found,tail=match?(match[2]||''):'';
+   return `<a class="info-body-link" href="${link}" target="_blank" rel="noopener noreferrer">${link}</a>${tail}`;
+ });
+}
 function articleContent(o){
  const images=Array.isArray(o.images)?o.images:[];
  const layout=appendMissing(initialLayout(o),images.length);
  const fragments=[];let index=0;
  for(const m of layout.matchAll(/\[画像(\d+)\]/g)){
   const plain=layout.slice(index,m.index);
-  if(plain.trim())fragments.push(`<p class="info-text-block">${e(plain.trim())}</p>`);
+  if(plain.trim())fragments.push(`<p class="info-text-block">${linkifyPlain(plain.trim())}</p>`);
   const photoIndex=Number(m[1])-1;
   if(Number.isInteger(photoIndex)&&photoIndex>=0&&photoIndex<images.length){
    fragments.push(`<figure class="info-inline-photo"><img src="${images[photoIndex]}" alt="記事内の画像 ${photoIndex+1}" loading="lazy" onclick="viewer('${o.id}',${photoIndex})"></figure>`);
   } else fragments.push(`<p class="info-text-block">${e(m[0])}</p>`);
   index=m.index+m[0].length;
  }
- const tail=layout.slice(index);if(tail.trim())fragments.push(`<p class="info-text-block">${e(tail.trim())}</p>`);
+ const tail=layout.slice(index);if(tail.trim())fragments.push(`<p class="info-text-block">${linkifyPlain(tail.trim())}</p>`);
  return fragments.join('');
 }
 showDetail=function(o){
