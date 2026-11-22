@@ -44,7 +44,58 @@ const formatReplyDate = when => {
   const raw=String(when);
   return /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(raw)?raw.slice(0,16):today();
 };
-const feedReplyEntry = (r,i,o) => `<div class="reply feed-reply-card"><div class="row">${r.image?`<img class="avatar" src="${esc(r.image)}" alt="">`:`<span class="avatar avatar-fallback">${esc(String(r.author||'ファン').slice(0,1))}</span>`}<div class="grow"><strong>${esc(r.author||'ファン')}</strong> <span class="pill role-member">MEMBER</span><div class="meta">${day(r.when)}</div></div></div><p>${esc(r.text||'')}</p><div class="feed-reply-actions"><button class="button secondary" type="button" onclick="feedReplyOpen('${o.id}',${i})">編集</button><button class="button danger" type="button" onclick="feedReplyDelete('${o.id}',${i})">削除</button></div></div>`;
+// Registered-account responses are stored as children on their fan reply.
+// Legacy replies remain valid and unchanged when they have no children.
+const feedTreeAccounts = () => accounts().filter(a => a && a.name && ['ARTIST','STAFF'].includes(a.role));
+const feedTreeChild = (c,pi,ci,o) => {
+ const name=String(c.author||'投稿者'),role=['ARTIST','STAFF'].includes(c.role)?c.role:'ARTIST';
+ const pic=c.image?`<img class="avatar" src="${esc(c.image)}" alt="">`:`<span class="avatar avatar-fallback">${esc(name.slice(0,1))}</span>`;
+ return `<div class="feed-tree-child"><div class="row">${pic}<div class="grow"><strong>${esc(name)}</strong> <span class="pill role-${role.toLowerCase()}">${role}</span><div class="meta">${day(c.when)}</div></div></div><p>${esc(c.text||'')}</p><div class="feed-reply-actions"><button class="button secondary" type="button" onclick="feedTreeOpen('${o.id}',${pi},${ci})">編集</button><button class="button danger" type="button" onclick="feedTreeDelete('${o.id}',${pi},${ci})">削除</button></div></div>`;
+};
+const feedTreePanel = (o,pi) => `<section class="feed-tree-editor" id="feedTreePanel-${pi}" hidden><h4 id="feedTreeHeading-${pi}">返信への返信を追加</h4><label class="field">投稿者管理のアカウント<select id="feedTreeAccount-${pi}"></select></label><label class="field">返信内容<textarea id="feedTreeText-${pi}" placeholder="ファンへの返信を入力"></textarea></label><label class="field">返信日時<input id="feedTreeWhen-${pi}" type="datetime-local"></label><p class="muted">登録済みのARTIST／STAFFアカウントのみ使用できます。名前・プロフィール写真・ラベルはアカウントの設定を使います。</p><div class="actions"><button class="button" type="button" id="feedTreeSave-${pi}" onclick="feedTreeSave('${o.id}',${pi})">返信を保存</button><button class="button secondary" type="button" onclick="feedTreeClose(${pi})">キャンセル</button></div></section>`;
+const feedReplyEntry = (r,i,o) => `<div class="reply feed-reply-card"><div class="row">${r.image?`<img class="avatar" src="${esc(r.image)}" alt="">`:`<span class="avatar avatar-fallback">${esc(String(r.author||'ファン').slice(0,1))}</span>`}<div class="grow"><strong>${esc(r.author||'ファン')}</strong> <span class="pill role-member">MEMBER</span><div class="meta">${day(r.when)}</div></div></div><p>${esc(r.text||'')}</p><div class="feed-reply-actions"><button class="button secondary" type="button" onclick="feedTreeOpen('${o.id}',${i},-1)">↳ 返信する</button><button class="button secondary" type="button" onclick="feedReplyOpen('${o.id}',${i})">編集</button><button class="button danger" type="button" onclick="feedReplyDelete('${o.id}',${i})">削除</button></div>${Array.isArray(r.children)&&r.children.length?`<div class="feed-tree-children">${r.children.map((c,j)=>feedTreeChild(c,i,j,o)).join('')}</div>`:''}${feedTreePanel(o,i)}</div>`;
+let feedTreeEditing = null;
+window.feedTreeClose=function(parentIndex){const panel=document.getElementById('feedTreePanel-'+parentIndex);if(panel)panel.hidden=true;feedTreeEditing=null;};
+window.feedTreeOpen=function(id,parentIndex,childIndex=-1){
+ const o=data.find(x=>x.id===id),parent=o?.replies?.[parentIndex];if(!parent||o.type!=='FEED')return alert('返信が見つかりません。');
+ const child=childIndex>=0?parent.children?.[childIndex]:null;if(childIndex>=0&&!child)return alert('返信への返信が見つかりません。');
+ const list=feedTreeAccounts();if(!list.length)return alert('先に「投稿者・送信者の管理」でARTISTまたはSTAFFアカウントを登録してください。');
+ document.querySelectorAll('.feed-tree-editor').forEach(x=>x.hidden=true);
+ const panel=document.getElementById('feedTreePanel-'+parentIndex);if(!panel)return;
+ const sel=document.getElementById('feedTreeAccount-'+parentIndex);
+ sel.innerHTML='<option value="">選択してください</option>'+list.map((a,i)=>`<option value="${i}">${esc(a.name)}（${a.role}）</option>`).join('');
+ let matching=list.findIndex(a=>a.name===child?.author&&a.role===child?.role);
+ sel.value=matching>=0?String(matching):'';
+ document.getElementById('feedTreeText-'+parentIndex).value=child?.text||'';
+ document.getElementById('feedTreeWhen-'+parentIndex).value=child?formatReplyDate(child.when):today();
+ document.getElementById('feedTreeHeading-'+parentIndex).textContent=child?'返信への返信を編集':'返信への返信を追加';
+ document.getElementById('feedTreeSave-'+parentIndex).textContent=child?'変更を保存':'返信を保存';
+ feedTreeEditing={id,parentIndex,childIndex};panel.hidden=false;
+ panel.scrollIntoView({block:'nearest',behavior:'smooth'});
+};
+window.feedTreeSave=async function(id,parentIndex){
+ if(!feedTreeEditing||feedTreeEditing.id!==id||feedTreeEditing.parentIndex!==parentIndex)return;
+ const o=data.find(x=>x.id===id),parent=o?.replies?.[parentIndex];if(!parent)return alert('元の返信が見つかりません。');
+ const list=feedTreeAccounts(),v=document.getElementById('feedTreeAccount-'+parentIndex)?.value;
+ if(v===''||!list[Number(v)])return alert('投稿者管理に登録されているアカウントを選択してください。');
+ const acct=list[Number(v)],message=document.getElementById('feedTreeText-'+parentIndex)?.value.trim(),when=document.getElementById('feedTreeWhen-'+parentIndex)?.value;
+ if(!message)return alert('返信内容を入力してください。');
+ if(!when||!Number.isFinite(new Date(when).getTime()))return alert('有効な返信日時を入力してください。');
+ const index=feedTreeEditing.childIndex,replies=[...(o.replies||[])],children=[...(parent.children||[])];
+ if(index>=0&&!children[index])return alert('編集する返信が見つかりません。');
+ const obj={...(index>=0?children[index]:{}),author:acct.name,role:acct.role,image:acct.image||'',text:message,when};
+ if(index>=0)children[index]=obj;else children.push(obj);
+ replies[parentIndex]={...parent,children};
+ const btn=document.getElementById('feedTreeSave-'+parentIndex);if(btn)btn.disabled=true;
+ try{await put({...o,replies});feedTreeEditing=null;await update()}catch(err){alert('返信を保存できませんでした: '+(err.message||err));if(btn)btn.disabled=false;}
+};
+window.feedTreeDelete=async function(id,parentIndex,childIndex){
+ const o=data.find(x=>x.id===id),parent=o?.replies?.[parentIndex],children=parent?.children;
+ if(!Array.isArray(children)||!children[childIndex])return alert('返信が見つかりません。');
+ if(!confirm('この返信への返信を削除しますか？'))return;
+ const replies=[...o.replies];replies[parentIndex]={...parent,children:children.filter((_,i)=>i!==childIndex)};
+ try{await put({...o,replies});feedTreeEditing=null;await update()}catch(err){alert('削除できませんでした: '+(err.message||err));}
+};
 const feedReplyPanel = o => `<section class="feed-reply-editor" id="feedReplyPanel" hidden><h3 id="feedReplyPanelHeading">ファンからの返信を追加</h3><label class="field">ファン名<input id="feedReplyName" placeholder="例：sakura_25" autocomplete="off"></label><label class="field">返信<textarea id="reply" placeholder="返信の内容"></textarea></label><label class="field">返信日時<input id="feedReplyWhen" type="datetime-local" value="${today()}"></label><label class="field">プロフィール写真（任意）<input id="feedReplyImage" type="file" accept="image/*"></label><div id="feedReplyExistingPhoto" class="muted" hidden>現在のプロフィール写真を維持します。変更する場合は新しい写真を選択してください。 <label><input type="checkbox" id="feedReplyRemovePhoto"> 現在の写真を削除する</label></div><p class="muted">返信ごとにファン名・日付・写真を設定できます。ラベルはMEMBER固定です。</p><div class="actions"><button class="button" type="button" onclick="feedReplySave('${o.id}')" id="feedReplySaveButton">返信を保存</button><button class="button secondary" type="button" onclick="feedReplyClose()">キャンセル</button></div></section>`;
 let feedReplyEditIndex=-1;
 const poster = (o, thread=false) => {
@@ -103,7 +154,7 @@ window.feedReplySave=async function(id){
 };
 window.feedReplyDelete=async function(id,index){
  const o=data.find(x=>x.id===id);if(!o||o.type!=='FEED'||!o.replies?.[index])return alert('返信が見つかりません。');
- if(!confirm('この返信を削除しますか？'))return;
+ if(!confirm((o.replies[index].children?.length?'この返信と、その下の返信も削除しますか？':'この返信を削除しますか？')))return;
  const replies=o.replies.filter((_,i)=>i!==index);
  try{await put({...o,replies});feedReplyEditIndex=-1;await update()}catch(err){alert('返信を削除できませんでした: '+(err.message||err))}
 };

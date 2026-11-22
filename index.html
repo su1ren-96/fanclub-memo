@@ -25,6 +25,16 @@
 .movie-list-entry{margin:0 0 22px;cursor:pointer}.movie-list-entry img{display:block;width:100%;aspect-ratio:16/9;object-fit:cover;border-radius:14px;background:#e8dfef}.movie-list-entry h3{font-size:17px;line-height:1.45;margin:9px 0 3px}.movie-list-entry .meta{margin-left:1px}.movie-still{width:100%;aspect-ratio:16/9;display:block;object-fit:cover;border-radius:12px;background:#e8dfef;margin:10px 0 14px}.movie-detail-copy h1{font-size:25px;margin:5px 0 3px}.movie-detail-copy .meta{margin-bottom:14px}.movie-detail-copy p{font-size:14px;line-height:1.9}
 /* Reduce UI collisions with iOS safe areas */
 .viewer button{top:calc(15px + env(safe-area-inset-top))}.viewer .prev,.viewer .next{top:50%}
+
+/* Nested registered-author replies to FEED fan comments */
+.feed-tree-children{margin:12px 0 0 12px;padding-left:12px;border-left:3px solid #d9c2e8;display:grid;gap:10px}
+.feed-tree-child{padding:10px 9px;background:#ffffff80;border-radius:11px}
+.feed-tree-child .avatar{width:30px;height:30px;flex:0 0 30px}
+.feed-tree-child p{white-space:pre-wrap;overflow-wrap:anywhere;margin:8px 0 0;font-size:13px}
+.feed-tree-editor{margin-top:12px;padding:12px;border-radius:12px;background:#ffffffa8}
+.feed-tree-editor h4{margin:0 0 12px}
+.feed-tree-editor[hidden]{display:none!important}
+.feed-tree-editor .actions{display:flex;gap:8px;flex-wrap:wrap}
 </style><style>
 .avatar{width:40px;height:40px;flex:0 0 40px;object-fit:cover;border-radius:50%;background:#e5d7f2}.avatar-fallback{display:grid;place-items:center;color:#715b88;font-weight:bold}.chat-date{text-align:center;margin:22px 0 16px;color:#8c7b98;font-size:12px}.chat-entry{display:flex;align-items:flex-start;gap:10px;margin:12px 0}.chat-entry.consecutive{margin-top:4px}.avatar-spacer{width:40px;flex:0 0 40px}.chat-content{max-width:80%;min-width:0}.bubble{background:#f9f0ff;border:1px solid white;border-radius:7px 18px 18px 18px;padding:11px 13px;white-space:pre-wrap;overflow-wrap:anywhere}.chat-photo{display:block;max-width:100%;max-height:320px;border-radius:12px;margin-bottom:8px}.chat-actions{display:flex;gap:12px;margin-top:4px}.chat-actions button{font-size:11px;background:transparent;color:#887b93}.notice-article{padding:24px 8px 10px}.notice-article h1{font-size:26px;margin:18px 0}.notice-article p{line-height:2;min-height:100px}.special-article{padding:12px 0}.special-hero{width:100%;max-height:520px;object-fit:cover;border-radius:10px}.special-article h1{font-size:30px;line-height:1.4;margin:15px 0 22px}.feature-section{padding:16px 0;line-height:2}.feature-section h2{font-size:21px}.feature-section p{line-height:2}.viewer button{z-index:2;touch-action:manipulation}.overlay button{touch-action:manipulation}
 </style>
@@ -299,4 +309,4 @@ body:has(#messageComposer) main{padding-bottom:calc(240px + env(safe-area-inset-
 .feed-reply-actions .button{padding:7px 13px;font-size:12px}
 .feed-reply-count-panel{background:#ffffff75;border-radius:15px;padding:13px;margin:12px 0}
 .feed-reply-count-panel .actions{display:flex;flex-wrap:wrap;gap:7px}
-</style></head><body><header><button class="icon" onclick="searchPage()">⌕</button><b>MAKE NEW WAVE</b><button class="icon" onclick="drawer(true)">☰</button></header><main id="app"></main><nav id="nav" class="bottom"></nav><div id="menu"></div><div id="modal"></div><script src="app.js?v=6.13-thread-retired" defer></script><script src="extension.js?v=6.8" defer></script><script src="greeting.js?v=6.10" defer></script><script src="information.js?v=2" defer></script><script src="enhancements.js?v=5-reply-editor" defer></script><script src="home-renewal.js?v=3-reply-count" defer></script></body></html>
+</style></head><body><header><button class="icon" onclick="searchPage()">⌕</button><b>MAKE NEW WAVE</b><button class="icon" onclick="drawer(true)">☰</button></header><main id="app"></main><nav id="nav" class="bottom"></nav><div id="menu"></div><div id="modal"></div><script src="app.js?v=6.13-thread-retired" defer></script><script src="extension.js?v=6.8" defer></script><script src="greeting.js?v=6.10" defer></script><script src="information.js?v=2" defer></script><script src="enhancements.js?v=6-reply-tree" defer></script><script src="home-renewal.js?v=3-reply-count" defer></script></body></html>
