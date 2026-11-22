@@ -198,6 +198,11 @@ editor=function(id){
    area.innerHTML=`<h3>投稿者</h3><div class="thread-mode-choices"><label><input type="radio" name="threadAuthorMode" value="registered" ${threadGuestMode==='registered'?'checked':''} onchange="threadToggleAuthor(this.value)"> 登録済みアカウント</label><label><input type="radio" name="threadAuthorMode" value="guest" ${threadGuestMode==='guest'?'checked':''} onchange="threadToggleAuthor(this.value)"> 投稿ごとにファン名を設定</label></div><div id="threadGuestFields"><label class="field">表示名<input id="threadGuestName" value="${esc(item?.threadGuest?.name||'')}" placeholder="好きなファン名"></label><label class="field">プロフィール写真（任意）<input id="threadGuestFile" type="file" accept="image/*" onchange="threadGuestPreview(this)"></label><div id="threadGuestPreview">${guestDraftImage?`<img class="avatar" src="${esc(guestDraftImage)}" alt="プロフィール写真">`:''}</div><button type="button" class="button secondary" onclick="threadGuestClearPhoto()">写真を外す</button><p class="muted">この投稿だけの表示名・写真です。ラベルはMEMBER固定で投稿者管理には追加しません。</p></div>`;
    form.querySelector('[name="artist"]')?.closest('label')?.before(area);
    threadToggleAuthor(threadGuestMode);
+ }else{
+   // Keep the existing editor chain for INFORMATION, MESSAGE, GALLERY,
+   // MOVIE, MUSIC, WARDROBE, ARCHIVE and SPECIAL. Without this fallback,
+   // their Add/Edit buttons silently do nothing.
+   return oldEditor(id);
  }
 };
 window.threadToggleAuthor=function(mode){threadGuestMode=mode;const box=document.getElementById('threadGuestFields');if(box)box.hidden=mode!=='guest';const select=document.querySelector('#editform [name="artist"]');if(select){const label=select.closest('label');if(label)label.style.display=mode==='guest'?'none':'';}};
