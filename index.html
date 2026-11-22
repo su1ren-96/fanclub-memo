@@ -35,8 +35,50 @@
 .feed-tree-editor h4{margin:0 0 12px}
 .feed-tree-editor[hidden]{display:none!important}
 .feed-tree-editor .actions{display:flex;gap:8px;flex-wrap:wrap}
+
+/* MUSIC: floating dimensional glass cards and unboxed discography details */
+.music-glass-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px;align-items:stretch;margin:17px 0}
+.music-glass-card{position:relative;isolation:isolate;overflow:hidden;min-width:0;display:flex;flex-direction:column;cursor:pointer;padding:11px;border-radius:27px;background:linear-gradient(140deg,#fffffff0 0%,#ffffff70 29%,#e6dcf357 65%,#ffffffb8 100%);border:1px solid #ffffffed;box-shadow:inset 2px 3px 3px #fffffffa,inset -2px -3px 7px #ba9dd030,0 12px 22px #8f75a82b,0 2px 3px #ffffffbb;backdrop-filter:blur(23px) saturate(160%);-webkit-backdrop-filter:blur(23px) saturate(160%);transition:transform .18s ease,box-shadow .18s ease}
+.music-glass-card:before{content:"";position:absolute;inset:2px 3px auto;height:29%;border-radius:23px 23px 55% 55%;background:linear-gradient(180deg,#ffffffa3,#ffffff00);pointer-events:none;z-index:2}
+.music-glass-card:after{content:"";position:absolute;inset:0;border-radius:inherit;border:2px solid #ffffff73;box-shadow:inset 0 0 8px #ffffffbc;pointer-events:none}
+.music-glass-card:active{transform:scale(.985)}
+.music-glass-card:focus-visible{outline:3px solid #9b7cb4;outline-offset:3px}
+.music-glass-cover{width:100%;aspect-ratio:1;object-fit:cover;display:block;flex-shrink:0;border-radius:18px;box-shadow:0 3px 9px #6d59752e;background:#e8dff0}
+.music-glass-empty{display:grid;place-items:center;font-size:35px;color:#947da2;background:linear-gradient(135deg,#f6e5ef,#dfe0fa)}
+.music-glass-info{display:flex;flex-direction:column;flex:1;gap:5px;padding:12px 3px 3px;min-height:73px}
+.music-glass-info h3{font-size:15px;line-height:1.4;color:#51425c;margin:0;font-weight:650;overflow-wrap:anywhere;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}
+.music-glass-info time{font-size:11px;color:#94849d;margin-top:auto;letter-spacing:.02em}
+.music-story-label{margin-top:12px}.music-story{padding:23px 0 12px;min-width:0}.music-story h1{font-size:clamp(26px,7vw,37px);line-height:1.4;font-weight:620;margin:0 0 23px;overflow-wrap:anywhere;color:#504159}
+.music-story-cover{display:block;width:100%;height:auto;max-height:none;object-fit:contain;border-radius:9px;background:#e9dff0;cursor:zoom-in}.music-story-empty{aspect-ratio:1;display:grid;place-items:center;font-size:42px;color:#9c88a9;cursor:default}
+.music-story-text{font-size:15px;line-height:2.15;white-space:pre-wrap;overflow-wrap:anywhere;margin:29px 0;color:#51465b}
+.music-story-date{display:block;color:#95839e;font-size:12px;letter-spacing:.04em;margin:22px 0 5px}
+.info-members-text{display:inline-block;flex:0 0 auto;color:#8b7098;font:500 10px/1.6 -apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN",sans-serif;letter-spacing:1.7px;white-space:nowrap;vertical-align:middle;margin-left:8px;background:transparent;border:0;padding:0}
+.info-members-edit{display:flex;align-items:center;gap:9px;font-weight:600}.info-members-edit input{width:auto;accent-color:#9675ad;margin:0}
+.home-news-meta{flex-wrap:wrap}
+@media(max-width:360px){.music-glass-grid{gap:10px}.music-glass-card{padding:8px;border-radius:22px}.music-glass-cover{border-radius:14px}.music-glass-info h3{font-size:13px}.info-members-text{letter-spacing:1px;margin-left:3px}}
 </style><style>
 .avatar{width:40px;height:40px;flex:0 0 40px;object-fit:cover;border-radius:50%;background:#e5d7f2}.avatar-fallback{display:grid;place-items:center;color:#715b88;font-weight:bold}.chat-date{text-align:center;margin:22px 0 16px;color:#8c7b98;font-size:12px}.chat-entry{display:flex;align-items:flex-start;gap:10px;margin:12px 0}.chat-entry.consecutive{margin-top:4px}.avatar-spacer{width:40px;flex:0 0 40px}.chat-content{max-width:80%;min-width:0}.bubble{background:#f9f0ff;border:1px solid white;border-radius:7px 18px 18px 18px;padding:11px 13px;white-space:pre-wrap;overflow-wrap:anywhere}.chat-photo{display:block;max-width:100%;max-height:320px;border-radius:12px;margin-bottom:8px}.chat-actions{display:flex;gap:12px;margin-top:4px}.chat-actions button{font-size:11px;background:transparent;color:#887b93}.notice-article{padding:24px 8px 10px}.notice-article h1{font-size:26px;margin:18px 0}.notice-article p{line-height:2;min-height:100px}.special-article{padding:12px 0}.special-hero{width:100%;max-height:520px;object-fit:cover;border-radius:10px}.special-article h1{font-size:30px;line-height:1.4;margin:15px 0 22px}.feature-section{padding:16px 0;line-height:2}.feature-section h2{font-size:21px}.feature-section p{line-height:2}.viewer button{z-index:2;touch-action:manipulation}.overlay button{touch-action:manipulation}
+
+/* MUSIC: floating dimensional glass cards and unboxed discography details */
+.music-glass-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px;align-items:stretch;margin:17px 0}
+.music-glass-card{position:relative;isolation:isolate;overflow:hidden;min-width:0;display:flex;flex-direction:column;cursor:pointer;padding:11px;border-radius:27px;background:linear-gradient(140deg,#fffffff0 0%,#ffffff70 29%,#e6dcf357 65%,#ffffffb8 100%);border:1px solid #ffffffed;box-shadow:inset 2px 3px 3px #fffffffa,inset -2px -3px 7px #ba9dd030,0 12px 22px #8f75a82b,0 2px 3px #ffffffbb;backdrop-filter:blur(23px) saturate(160%);-webkit-backdrop-filter:blur(23px) saturate(160%);transition:transform .18s ease,box-shadow .18s ease}
+.music-glass-card:before{content:"";position:absolute;inset:2px 3px auto;height:29%;border-radius:23px 23px 55% 55%;background:linear-gradient(180deg,#ffffffa3,#ffffff00);pointer-events:none;z-index:2}
+.music-glass-card:after{content:"";position:absolute;inset:0;border-radius:inherit;border:2px solid #ffffff73;box-shadow:inset 0 0 8px #ffffffbc;pointer-events:none}
+.music-glass-card:active{transform:scale(.985)}
+.music-glass-card:focus-visible{outline:3px solid #9b7cb4;outline-offset:3px}
+.music-glass-cover{width:100%;aspect-ratio:1;object-fit:cover;display:block;flex-shrink:0;border-radius:18px;box-shadow:0 3px 9px #6d59752e;background:#e8dff0}
+.music-glass-empty{display:grid;place-items:center;font-size:35px;color:#947da2;background:linear-gradient(135deg,#f6e5ef,#dfe0fa)}
+.music-glass-info{display:flex;flex-direction:column;flex:1;gap:5px;padding:12px 3px 3px;min-height:73px}
+.music-glass-info h3{font-size:15px;line-height:1.4;color:#51425c;margin:0;font-weight:650;overflow-wrap:anywhere;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}
+.music-glass-info time{font-size:11px;color:#94849d;margin-top:auto;letter-spacing:.02em}
+.music-story-label{margin-top:12px}.music-story{padding:23px 0 12px;min-width:0}.music-story h1{font-size:clamp(26px,7vw,37px);line-height:1.4;font-weight:620;margin:0 0 23px;overflow-wrap:anywhere;color:#504159}
+.music-story-cover{display:block;width:100%;height:auto;max-height:none;object-fit:contain;border-radius:9px;background:#e9dff0;cursor:zoom-in}.music-story-empty{aspect-ratio:1;display:grid;place-items:center;font-size:42px;color:#9c88a9;cursor:default}
+.music-story-text{font-size:15px;line-height:2.15;white-space:pre-wrap;overflow-wrap:anywhere;margin:29px 0;color:#51465b}
+.music-story-date{display:block;color:#95839e;font-size:12px;letter-spacing:.04em;margin:22px 0 5px}
+.info-members-text{display:inline-block;flex:0 0 auto;color:#8b7098;font:500 10px/1.6 -apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN",sans-serif;letter-spacing:1.7px;white-space:nowrap;vertical-align:middle;margin-left:8px;background:transparent;border:0;padding:0}
+.info-members-edit{display:flex;align-items:center;gap:9px;font-weight:600}.info-members-edit input{width:auto;accent-color:#9675ad;margin:0}
+.home-news-meta{flex-wrap:wrap}
+@media(max-width:360px){.music-glass-grid{gap:10px}.music-glass-card{padding:8px;border-radius:22px}.music-glass-cover{border-radius:14px}.music-glass-info h3{font-size:13px}.info-members-text{letter-spacing:1px;margin-left:3px}}
 </style>
 <style>
 /* v6: independent channel UI */
@@ -189,6 +231,27 @@ body:not(.channel-mode) .overlay .inner{min-width:0;width:100%}
 .gc-envelope.gc-open .gc-card{transform:translate(-50%,-126px) scale(1);z-index:4;opacity:1;visibility:visible;transition:transform .65s cubic-bezier(.2,.8,.2,1) .20s,opacity .18s ease .15s,visibility 0s}
 .gc-envelope.gc-open .gc-seal{opacity:0}
 @media(prefers-reduced-motion:reduce){.gc-envelope .gc-flap,.gc-envelope .gc-card,.gc-flip,.gc-flip-inner{transition-duration:.01ms!important;transition-delay:0s!important}}
+
+/* MUSIC: floating dimensional glass cards and unboxed discography details */
+.music-glass-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px;align-items:stretch;margin:17px 0}
+.music-glass-card{position:relative;isolation:isolate;overflow:hidden;min-width:0;display:flex;flex-direction:column;cursor:pointer;padding:11px;border-radius:27px;background:linear-gradient(140deg,#fffffff0 0%,#ffffff70 29%,#e6dcf357 65%,#ffffffb8 100%);border:1px solid #ffffffed;box-shadow:inset 2px 3px 3px #fffffffa,inset -2px -3px 7px #ba9dd030,0 12px 22px #8f75a82b,0 2px 3px #ffffffbb;backdrop-filter:blur(23px) saturate(160%);-webkit-backdrop-filter:blur(23px) saturate(160%);transition:transform .18s ease,box-shadow .18s ease}
+.music-glass-card:before{content:"";position:absolute;inset:2px 3px auto;height:29%;border-radius:23px 23px 55% 55%;background:linear-gradient(180deg,#ffffffa3,#ffffff00);pointer-events:none;z-index:2}
+.music-glass-card:after{content:"";position:absolute;inset:0;border-radius:inherit;border:2px solid #ffffff73;box-shadow:inset 0 0 8px #ffffffbc;pointer-events:none}
+.music-glass-card:active{transform:scale(.985)}
+.music-glass-card:focus-visible{outline:3px solid #9b7cb4;outline-offset:3px}
+.music-glass-cover{width:100%;aspect-ratio:1;object-fit:cover;display:block;flex-shrink:0;border-radius:18px;box-shadow:0 3px 9px #6d59752e;background:#e8dff0}
+.music-glass-empty{display:grid;place-items:center;font-size:35px;color:#947da2;background:linear-gradient(135deg,#f6e5ef,#dfe0fa)}
+.music-glass-info{display:flex;flex-direction:column;flex:1;gap:5px;padding:12px 3px 3px;min-height:73px}
+.music-glass-info h3{font-size:15px;line-height:1.4;color:#51425c;margin:0;font-weight:650;overflow-wrap:anywhere;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}
+.music-glass-info time{font-size:11px;color:#94849d;margin-top:auto;letter-spacing:.02em}
+.music-story-label{margin-top:12px}.music-story{padding:23px 0 12px;min-width:0}.music-story h1{font-size:clamp(26px,7vw,37px);line-height:1.4;font-weight:620;margin:0 0 23px;overflow-wrap:anywhere;color:#504159}
+.music-story-cover{display:block;width:100%;height:auto;max-height:none;object-fit:contain;border-radius:9px;background:#e9dff0;cursor:zoom-in}.music-story-empty{aspect-ratio:1;display:grid;place-items:center;font-size:42px;color:#9c88a9;cursor:default}
+.music-story-text{font-size:15px;line-height:2.15;white-space:pre-wrap;overflow-wrap:anywhere;margin:29px 0;color:#51465b}
+.music-story-date{display:block;color:#95839e;font-size:12px;letter-spacing:.04em;margin:22px 0 5px}
+.info-members-text{display:inline-block;flex:0 0 auto;color:#8b7098;font:500 10px/1.6 -apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN",sans-serif;letter-spacing:1.7px;white-space:nowrap;vertical-align:middle;margin-left:8px;background:transparent;border:0;padding:0}
+.info-members-edit{display:flex;align-items:center;gap:9px;font-weight:600}.info-members-edit input{width:auto;accent-color:#9675ad;margin:0}
+.home-news-meta{flex-wrap:wrap}
+@media(max-width:360px){.music-glass-grid{gap:10px}.music-glass-card{padding:8px;border-radius:22px}.music-glass-cover{border-radius:14px}.music-glass-info h3{font-size:13px}.info-members-text{letter-spacing:1px;margin-left:3px}}
 </style><style id="message-v68">
 /* MESSAGE-only fixed chat composer, above the existing 5-tab bar. */
 body:has(#messageComposer) main{padding-bottom:calc(240px + env(safe-area-inset-bottom));}
@@ -282,6 +345,27 @@ body:has(#messageComposer) main{padding-bottom:calc(240px + env(safe-area-inset-
  .feed-reaction-summary{gap:6px 7px}
  .feed-reaction-chip{gap:3px;padding:3px 7px;font-size:12px;line-height:1.2;white-space:nowrap}
  .feed-reaction-chip .reaction-icon{width:24px;height:24px;flex-basis:24px}
+
+/* MUSIC: floating dimensional glass cards and unboxed discography details */
+.music-glass-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px;align-items:stretch;margin:17px 0}
+.music-glass-card{position:relative;isolation:isolate;overflow:hidden;min-width:0;display:flex;flex-direction:column;cursor:pointer;padding:11px;border-radius:27px;background:linear-gradient(140deg,#fffffff0 0%,#ffffff70 29%,#e6dcf357 65%,#ffffffb8 100%);border:1px solid #ffffffed;box-shadow:inset 2px 3px 3px #fffffffa,inset -2px -3px 7px #ba9dd030,0 12px 22px #8f75a82b,0 2px 3px #ffffffbb;backdrop-filter:blur(23px) saturate(160%);-webkit-backdrop-filter:blur(23px) saturate(160%);transition:transform .18s ease,box-shadow .18s ease}
+.music-glass-card:before{content:"";position:absolute;inset:2px 3px auto;height:29%;border-radius:23px 23px 55% 55%;background:linear-gradient(180deg,#ffffffa3,#ffffff00);pointer-events:none;z-index:2}
+.music-glass-card:after{content:"";position:absolute;inset:0;border-radius:inherit;border:2px solid #ffffff73;box-shadow:inset 0 0 8px #ffffffbc;pointer-events:none}
+.music-glass-card:active{transform:scale(.985)}
+.music-glass-card:focus-visible{outline:3px solid #9b7cb4;outline-offset:3px}
+.music-glass-cover{width:100%;aspect-ratio:1;object-fit:cover;display:block;flex-shrink:0;border-radius:18px;box-shadow:0 3px 9px #6d59752e;background:#e8dff0}
+.music-glass-empty{display:grid;place-items:center;font-size:35px;color:#947da2;background:linear-gradient(135deg,#f6e5ef,#dfe0fa)}
+.music-glass-info{display:flex;flex-direction:column;flex:1;gap:5px;padding:12px 3px 3px;min-height:73px}
+.music-glass-info h3{font-size:15px;line-height:1.4;color:#51425c;margin:0;font-weight:650;overflow-wrap:anywhere;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}
+.music-glass-info time{font-size:11px;color:#94849d;margin-top:auto;letter-spacing:.02em}
+.music-story-label{margin-top:12px}.music-story{padding:23px 0 12px;min-width:0}.music-story h1{font-size:clamp(26px,7vw,37px);line-height:1.4;font-weight:620;margin:0 0 23px;overflow-wrap:anywhere;color:#504159}
+.music-story-cover{display:block;width:100%;height:auto;max-height:none;object-fit:contain;border-radius:9px;background:#e9dff0;cursor:zoom-in}.music-story-empty{aspect-ratio:1;display:grid;place-items:center;font-size:42px;color:#9c88a9;cursor:default}
+.music-story-text{font-size:15px;line-height:2.15;white-space:pre-wrap;overflow-wrap:anywhere;margin:29px 0;color:#51465b}
+.music-story-date{display:block;color:#95839e;font-size:12px;letter-spacing:.04em;margin:22px 0 5px}
+.info-members-text{display:inline-block;flex:0 0 auto;color:#8b7098;font:500 10px/1.6 -apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN",sans-serif;letter-spacing:1.7px;white-space:nowrap;vertical-align:middle;margin-left:8px;background:transparent;border:0;padding:0}
+.info-members-edit{display:flex;align-items:center;gap:9px;font-weight:600}.info-members-edit input{width:auto;accent-color:#9675ad;margin:0}
+.home-news-meta{flex-wrap:wrap}
+@media(max-width:360px){.music-glass-grid{gap:10px}.music-glass-card{padding:8px;border-radius:22px}.music-glass-cover{border-radius:14px}.music-glass-info h3{font-size:13px}.info-members-text{letter-spacing:1px;margin-left:3px}}
 </style><style>
 /* HOME-only layout, existing global palette and section spacing preserved */
 .home-widgets{display:flex;flex-direction:column;gap:10px}
@@ -378,4 +462,25 @@ body:has(#messageComposer) main{padding-bottom:calc(240px + env(safe-area-inset-
 .home-visual-settings-controls span{font-size:11px;color:#887b93;margin-right:auto}
 .home-visual-settings-controls .button{font-size:11px;padding:6px 9px}
 @media(max-width:355px){.home-widgets .home-section-head h3,.home-widgets .artist-profile-home-heading h1{font-size:17px!important;letter-spacing:2px}}
-</style></head><body><header><button class="icon" onclick="searchPage()">⌕</button><b>MAKE NEW WAVE</b><button class="icon" onclick="drawer(true)">☰</button></header><main id="app"></main><nav id="nav" class="bottom"></nav><div id="menu"></div><div id="modal"></div><script src="app.js?v=6.14-menu-labels" defer></script><script src="extension.js?v=6.8" defer></script><script src="greeting.js?v=6.10" defer></script><script src="information.js?v=2" defer></script><script src="enhancements.js?v=7-navigation-editor-fix" defer></script><script src="home-renewal.js?v=6-airy-headings" defer></script><script src="artist-profile.js?v=3-settings-profile" defer></script><script src="home-visual.js?v=2-slideshow" defer></script></body></html>
+
+/* MUSIC: floating dimensional glass cards and unboxed discography details */
+.music-glass-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px;align-items:stretch;margin:17px 0}
+.music-glass-card{position:relative;isolation:isolate;overflow:hidden;min-width:0;display:flex;flex-direction:column;cursor:pointer;padding:11px;border-radius:27px;background:linear-gradient(140deg,#fffffff0 0%,#ffffff70 29%,#e6dcf357 65%,#ffffffb8 100%);border:1px solid #ffffffed;box-shadow:inset 2px 3px 3px #fffffffa,inset -2px -3px 7px #ba9dd030,0 12px 22px #8f75a82b,0 2px 3px #ffffffbb;backdrop-filter:blur(23px) saturate(160%);-webkit-backdrop-filter:blur(23px) saturate(160%);transition:transform .18s ease,box-shadow .18s ease}
+.music-glass-card:before{content:"";position:absolute;inset:2px 3px auto;height:29%;border-radius:23px 23px 55% 55%;background:linear-gradient(180deg,#ffffffa3,#ffffff00);pointer-events:none;z-index:2}
+.music-glass-card:after{content:"";position:absolute;inset:0;border-radius:inherit;border:2px solid #ffffff73;box-shadow:inset 0 0 8px #ffffffbc;pointer-events:none}
+.music-glass-card:active{transform:scale(.985)}
+.music-glass-card:focus-visible{outline:3px solid #9b7cb4;outline-offset:3px}
+.music-glass-cover{width:100%;aspect-ratio:1;object-fit:cover;display:block;flex-shrink:0;border-radius:18px;box-shadow:0 3px 9px #6d59752e;background:#e8dff0}
+.music-glass-empty{display:grid;place-items:center;font-size:35px;color:#947da2;background:linear-gradient(135deg,#f6e5ef,#dfe0fa)}
+.music-glass-info{display:flex;flex-direction:column;flex:1;gap:5px;padding:12px 3px 3px;min-height:73px}
+.music-glass-info h3{font-size:15px;line-height:1.4;color:#51425c;margin:0;font-weight:650;overflow-wrap:anywhere;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}
+.music-glass-info time{font-size:11px;color:#94849d;margin-top:auto;letter-spacing:.02em}
+.music-story-label{margin-top:12px}.music-story{padding:23px 0 12px;min-width:0}.music-story h1{font-size:clamp(26px,7vw,37px);line-height:1.4;font-weight:620;margin:0 0 23px;overflow-wrap:anywhere;color:#504159}
+.music-story-cover{display:block;width:100%;height:auto;max-height:none;object-fit:contain;border-radius:9px;background:#e9dff0;cursor:zoom-in}.music-story-empty{aspect-ratio:1;display:grid;place-items:center;font-size:42px;color:#9c88a9;cursor:default}
+.music-story-text{font-size:15px;line-height:2.15;white-space:pre-wrap;overflow-wrap:anywhere;margin:29px 0;color:#51465b}
+.music-story-date{display:block;color:#95839e;font-size:12px;letter-spacing:.04em;margin:22px 0 5px}
+.info-members-text{display:inline-block;flex:0 0 auto;color:#8b7098;font:500 10px/1.6 -apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN",sans-serif;letter-spacing:1.7px;white-space:nowrap;vertical-align:middle;margin-left:8px;background:transparent;border:0;padding:0}
+.info-members-edit{display:flex;align-items:center;gap:9px;font-weight:600}.info-members-edit input{width:auto;accent-color:#9675ad;margin:0}
+.home-news-meta{flex-wrap:wrap}
+@media(max-width:360px){.music-glass-grid{gap:10px}.music-glass-card{padding:8px;border-radius:22px}.music-glass-cover{border-radius:14px}.music-glass-info h3{font-size:13px}.info-members-text{letter-spacing:1px;margin-left:3px}}
+</style></head><body><header><button class="icon" onclick="searchPage()">⌕</button><b>MAKE NEW WAVE</b><button class="icon" onclick="drawer(true)">☰</button></header><main id="app"></main><nav id="nav" class="bottom"></nav><div id="menu"></div><div id="modal"></div><script src="app.js?v=6.15-music-members" defer></script><script src="extension.js?v=6.8" defer></script><script src="greeting.js?v=6.10" defer></script><script src="information.js?v=3-members" defer></script><script src="enhancements.js?v=7-navigation-editor-fix" defer></script><script src="home-renewal.js?v=7-members" defer></script><script src="artist-profile.js?v=3-settings-profile" defer></script><script src="home-visual.js?v=2-slideshow" defer></script><script src="music-design.js?v=1-glass-members" defer></script></body></html>
