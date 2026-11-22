@@ -5,6 +5,27 @@
 const esc = e;
 const FEED_REACTIONS = 35;
 const reactionKey = i => 'art-' + i;
+// Short counts are presentation-only; stored counts remain exact.
+const formatReactionCount = value => {
+  const n = Math.max(0, Math.floor(Number(value) || 0));
+  if (n < 1000) return String(n);
+  if (n < 1000000) return (Math.floor(n / 100) / 10).toFixed(1) + 'K';
+  return (Math.floor(n / 100000) / 10).toFixed(1) + 'M';
+};
+// Sample without replacement. Called when creating a new FEED post
+// or when the user explicitly presses the shuffle button.
+const makeRandomFeedReactions = () => {
+  const ids = Array.from({length:FEED_REACTIONS}, (_,i)=>i);
+  for (let i=ids.length-1; i>0; i--) {
+    const j=Math.floor(Math.random()*(i+1));
+    [ids[i],ids[j]]=[ids[j],ids[i]];
+  }
+  const count=6+Math.floor(Math.random()*2);
+  return ids.slice(0,count).map(i=>({
+    id:reactionKey(i),
+    count:1000+Math.floor(Math.random()*2001)
+  }));
+};
 const reactionIcon = (r, cls='reaction-icon') => {
   if (r.image) return `<img class="${cls}" src="${esc(r.image)}" alt="リアクション">`;
   const n = Number(String(r.id||'').replace('art-',''));
@@ -13,7 +34,7 @@ const reactionIcon = (r, cls='reaction-icon') => {
 };
 const reactionSummary = o => {
   const a=Array.isArray(o.feedReactions)?o.feedReactions:[];
-  return `<div class="feed-reaction-summary">${a.map(r=>`<span class="feed-reaction-chip">${reactionIcon(r)}<span>${Math.max(0,Math.floor(Number(r.count)||0)).toLocaleString('ja-JP')}</span></span>`).join('')}${!a.length?'<span class="meta">リアクションなし</span>':''}</div>`;
+  return `<div class="feed-reaction-summary">${a.map(r=>`<span class="feed-reaction-chip">${reactionIcon(r)}<span>${formatReactionCount(r.count)}</span></span>`).join('')}${!a.length?'<span class="meta">リアクションなし</span>':''}</div>`;
 };
 const poster = (o, thread=false) => {
   const guest=thread&&o.threadGuest?.enabled;
@@ -37,11 +58,11 @@ editor=function(id){
  const item=id?data.find(x=>x.id===id):null,type=item?.type||page;
  if(type==='FEED'){
    feedEditingId=id||null;
-   feedDraft=(item?.feedReactions||[]).map(r=>({...r}));
+   feedDraft=item ? (item.feedReactions||[]).map(r=>({...r})) : makeRandomFeedReactions();
    oldEditor(id);
    const form=document.getElementById('editform');if(!form)return;
    const area=document.createElement('section');area.className='reaction-edit-area';
-   area.innerHTML=`<h3>画像リアクション</h3><p class="muted">画像を選び、リアクション件数を自由に入力できます。複数選択可能です。</p><div id="feedReactionRows"></div><button class="button secondary" type="button" onclick="feedReactionPicker()">＋ リアクションを選ぶ</button>`;
+   area.innerHTML=`<h3>画像リアクション</h3><p class="muted">新規投稿は6〜7種類・各1.0K〜3.0Kを自動設定します。手動で種類・件数を変更できます。ランダム生成を押すと現在のリアクション設定が置き換わります。</p><div id="feedReactionRows"></div><div class="actions"><button class="button secondary" type="button" onclick="feedReactionPicker()">＋ リアクションを選ぶ</button><button class="button secondary" type="button" onclick="feedRandomizeReactions()">↻ ランダム生成</button></div>`;
    form.querySelector('.actions')?.before(area);drawFeedReactionRows();
  }else if(type==='THREAD'){
    threadGuestMode=item?.threadGuest?.enabled?'guest':'registered';guestDraftImage=item?.threadGuest?.image||'';
@@ -57,6 +78,11 @@ window.threadToggleAuthor=function(mode){threadGuestMode=mode;const box=document
 window.threadGuestPreview=async function(el){if(el.files?.[0]){try{guestDraftImage=await readFile(el.files[0]);document.getElementById('threadGuestPreview').innerHTML=`<img class="avatar" src="${esc(guestDraftImage)}" alt="プレビュー">`;}catch(err){alert('画像を読み込めませんでした: '+err.message)}}};
 window.threadGuestClearPhoto=function(){guestDraftImage='';const el=document.getElementById('threadGuestPreview');if(el)el.innerHTML='';const input=document.getElementById('threadGuestFile');if(input)input.value=''};
 window.drawFeedReactionRows=function(){const slot=document.getElementById('feedReactionRows');if(!slot)return;slot.innerHTML=feedDraft.map((r,i)=>`<div class="feed-reaction-edit-row">${reactionIcon(r)}<label>件数<input type="number" inputmode="numeric" min="0" step="1" value="${Number(r.count)||0}" onchange="feedCountChange(${i},this.value)"></label><button type="button" class="button danger" onclick="feedRemoveReaction(${i})">削除</button></div>`).join('')||'<p class="muted">選択されたリアクションはありません。</p>'};
+window.feedRandomizeReactions=function(){
+  if(feedDraft.length&&!confirm('現在のリアクションの種類と件数をランダムな内容に置き換えますか？'))return;
+  feedDraft=makeRandomFeedReactions();
+  drawFeedReactionRows();
+};
 window.feedCountChange=(i,v)=>{feedDraft[i].count=Math.max(0,Math.floor(Number(v)||0))};
 window.feedRemoveReaction=i=>{feedDraft.splice(i,1);drawFeedReactionRows()};
 window.feedReactionPicker=function(){
