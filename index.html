@@ -352,4 +352,30 @@ body:has(#messageComposer) main{padding-bottom:calc(240px + env(safe-area-inset-
 .home-profile .artist-profile-view{padding:0!important}
 .home-profile .artist-profile-hero{max-height:520px}
 .home-profile .artist-profile-empty{padding:8px 0}
-</style></head><body><header><button class="icon" onclick="searchPage()">⌕</button><b>MAKE NEW WAVE</b><button class="icon" onclick="drawer(true)">☰</button></header><main id="app"></main><nav id="nav" class="bottom"></nav><div id="menu"></div><div id="modal"></div><script src="app.js?v=6.14-menu-labels" defer></script><script src="extension.js?v=6.8" defer></script><script src="greeting.js?v=6.10" defer></script><script src="information.js?v=2" defer></script><script src="enhancements.js?v=7-navigation-editor-fix" defer></script><script src="home-renewal.js?v=5-fullbleed-profile" defer></script><script src="artist-profile.js?v=2-home-integrated" defer></script><script src="home-visual.js?v=1" defer></script></body></html>
+
+/* P — AIRY SPACING: HOME section headings, without emoji. */
+.home-widgets .home-section-head h3,
+.home-widgets .artist-profile-home-heading h1{
+  font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif;
+  font-size:19px!important;
+  font-weight:400!important;
+  letter-spacing:3px;
+  line-height:1.5;
+  color:#67566F;
+  text-transform:uppercase;
+}
+.home-widgets .home-section-head{min-width:0}
+.home-widgets .home-section-head h3{min-width:0;overflow-wrap:anywhere}
+.home-widgets .artist-profile-home-heading{margin-bottom:12px}
+.home-visual-slideshow{position:relative;width:100%;height:100%;overflow:hidden}
+.home-visual-slide{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity 900ms ease-in-out;pointer-events:none}
+.home-visual-slide.is-active{opacity:1}
+@media(prefers-reduced-motion:reduce){.home-visual-slide{transition:none}}
+.home-visual-settings-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:12px 0 18px}
+.home-visual-settings-item{min-width:0;background:#ffffff92;border-radius:12px;padding:8px}
+.home-visual-settings-item img{display:block;width:100%;aspect-ratio:3/4;object-fit:cover;border-radius:8px}
+.home-visual-settings-controls{display:flex;gap:5px;align-items:center;flex-wrap:wrap;margin-top:8px}
+.home-visual-settings-controls span{font-size:11px;color:#887b93;margin-right:auto}
+.home-visual-settings-controls .button{font-size:11px;padding:6px 9px}
+@media(max-width:355px){.home-widgets .home-section-head h3,.home-widgets .artist-profile-home-heading h1{font-size:17px!important;letter-spacing:2px}}
+</style></head><body><header><button class="icon" onclick="searchPage()">⌕</button><b>MAKE NEW WAVE</b><button class="icon" onclick="drawer(true)">☰</button></header><main id="app"></main><nav id="nav" class="bottom"></nav><div id="menu"></div><div id="modal"></div><script src="app.js?v=6.14-menu-labels" defer></script><script src="extension.js?v=6.8" defer></script><script src="greeting.js?v=6.10" defer></script><script src="information.js?v=2" defer></script><script src="enhancements.js?v=7-navigation-editor-fix" defer></script><script src="home-renewal.js?v=6-airy-headings" defer></script><script src="artist-profile.js?v=3-settings-profile" defer></script><script src="home-visual.js?v=2-slideshow" defer></script></body></html>

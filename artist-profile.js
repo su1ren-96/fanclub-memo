@@ -14,16 +14,16 @@ function artistView(){
  const o=artistRecord();
  const fields=o?.profileFields||[];
  return `<div class="heading"><h1>PROFILE</h1><button class="button" type="button" onclick="artistProfileEdit()">${o?'編集':'＋ 登録'}</button></div>`+
- (o?`<section class="artist-profile-view tile">${o.images?.[0]?`<img class="artist-profile-hero" src="${attr(o.images[0])}" alt="プロフィール写真">`:''}<div class="artist-profile-name"><span class="meta">ARTIST PROFILE</span><h2>${clean(o.title||'名前未登録')}</h2></div><div class="artist-profile-facts">${fields.filter(f=>f.label&&f.value).map(f=>`<div class="artist-profile-fact"><span>${clean(f.label)}</span><strong>${clean(f.value)}</strong></div>`).join('')||'<div class="home-empty">プロフィール項目はまだありません</div>'}</div></section>`:
+ (o?`<section class="artist-profile-view tile">${o.images?.[0]?`<img class="artist-profile-hero" src="${attr(o.images[0])}" alt="プロフィール写真">`:''}<div class="artist-profile-name"><h2>${clean(o.title||'名前未登録')}</h2></div><div class="artist-profile-facts">${fields.filter(f=>f.label&&f.value).map(f=>`<div class="artist-profile-fact"><span>${clean(f.label)}</span><strong>${clean(f.value)}</strong></div>`).join('')||'<div class="home-empty">プロフィール項目はまだありません</div>'}</div></section>`:
  `<section class="tile artist-profile-empty"><p>アーティストのプロフィールはまだ登録されていません。</p><button class="button" type="button" onclick="artistProfileEdit()">プロフィールを登録</button></section>`);
 }
 // HOME reuses the existing profile detail layout, rather than a new summary card.
 window.artistProfileHomeMarkup=function(){
  const o=artistRecord();
  const fields=o?.profileFields||[];
- return `<div class="heading artist-profile-home-heading"><h1>PROFILE</h1><button class="button" type="button" onclick="artistProfileEdit()">${o?'編集':'＋ 登録'}</button></div>`+
- (o?`<div class="artist-profile-view">${o.images?.[0]?`<img class="artist-profile-hero" src="${attr(o.images[0])}" alt="プロフィール写真">`:''}<div class="artist-profile-name"><span class="meta">ARTIST PROFILE</span><h2>${clean(o.title||'名前未登録')}</h2></div><div class="artist-profile-facts">${fields.filter(f=>f.label&&f.value).map(f=>`<div class="artist-profile-fact"><span>${clean(f.label)}</span><strong>${clean(f.value)}</strong></div>`).join('')||'<div class="home-empty">プロフィール項目はまだありません</div>'}</div></div>`:
- `<div class="artist-profile-empty"><p>アーティストのプロフィールはまだ登録されていません。</p><button class="button" type="button" onclick="artistProfileEdit()">プロフィールを登録</button></div>`);
+ return `<div class="heading artist-profile-home-heading"><h1>PROFILE</h1></div>`+
+ (o?`<div class="artist-profile-view">${o.images?.[0]?`<img class="artist-profile-hero" src="${attr(o.images[0])}" alt="プロフィール写真">`:''}<div class="artist-profile-name"><h2>${clean(o.title||'名前未登録')}</h2></div><div class="artist-profile-facts">${fields.filter(f=>f.label&&f.value).map(f=>`<div class="artist-profile-fact"><span>${clean(f.label)}</span><strong>${clean(f.value)}</strong></div>`).join('')||'<div class="home-empty">プロフィール項目はまだありません</div>'}</div></div>`:
+ `<div class="artist-profile-empty"><p>アーティストのプロフィールはまだ登録されていません。</p></div>`);
 };
 // The old PROFILE route now locates the corresponding section on HOME.
 const originalGoArtist=go;
@@ -36,7 +36,15 @@ go=function(destination){
  return originalGoArtist(destination);
 };
 const originalRender=render;
-render=function(){if(page==='PROFILE'&&!selected){originalRender();$('#app').innerHTML=artistView();return}return originalRender()};
+render=function(){
+ const result=originalRender();
+ if(page==='PROFILE'&&!selected)$('#app').innerHTML=artistView();
+ if(page==='SETTINGS'&&!selected){
+  const app=document.getElementById('app');
+  if(app)app.insertAdjacentHTML('beforeend',`<div class="card" id="artistProfileSettings"><h3>PROFILE編集</h3><p class="muted">HOMEに表示するアーティストの写真・名前・プロフィール項目を編集できます。</p><button class="button secondary" type="button" onclick="artistProfileEdit()">プロフィールを編集</button></div>`);
+ }
+ return result;
+};
 function gatherFields(){
  const rows=document.querySelectorAll('#artistProfileFields .artist-profile-field-row');
  if(!rows.length)return;

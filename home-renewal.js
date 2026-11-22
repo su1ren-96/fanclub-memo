@@ -5,7 +5,7 @@ const escHome=e;
 const byNewest=type=>data.filter(o=>o.type===type).sort((a,b)=>new Date(b.when||0)-new Date(a.when||0));
 const empty='<div class="home-empty">まだ登録がありません</div>';
 const date=o=>o?.when?day(o.when):'';
-const headline=(type,icon)=>`<div class="home-section-head"><h3>${icon} ${type}</h3><button type="button" class="home-all" onclick="event.stopPropagation();go('${type}')">VIEW ALL →</button></div>`;
+const headline=(type,icon)=>`<div class="home-section-head"><h3>${type}</h3><button type="button" class="home-all" onclick="event.stopPropagation();go('${type}')">VIEW ALL →</button></div>`;
 const section=(type,icon,body)=>`<section class="tile home-section home-${type.toLowerCase()}">${headline(type,icon)}${body}</section>`;
 const openList=type=>`onclick="go('${type}')" role="button" tabindex="0" onkeydown="if(event.key==='Enter')go('${type}')"`;
 const openDetail=id=>`onclick="detail('${escHome(id)}')" role="button" tabindex="0" onkeydown="if(event.key==='Enter')detail('${escHome(id)}')"`;
