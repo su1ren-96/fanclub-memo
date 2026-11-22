@@ -36,6 +36,17 @@ const reactionSummary = o => {
   const a=Array.isArray(o.feedReactions)?o.feedReactions:[];
   return `<div class="feed-reaction-summary">${a.map(r=>`<span class="feed-reaction-chip">${reactionIcon(r)}<span>${formatReactionCount(r.count)}</span></span>`).join('')}${!a.length?'<span class="meta">リアクションなし</span>':''}</div>`;
 };
+// A manually entered count is display-only. The saved replies stay intact.
+const feedReplyCount = o => Number.isSafeInteger(o.feedReplyCountOverride) && o.feedReplyCountOverride>=0
+  ? o.feedReplyCountOverride : (Array.isArray(o.replies)?o.replies.length:0);
+const formatReplyDate = when => {
+  if(!when)return today();
+  const raw=String(when);
+  return /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(raw)?raw.slice(0,16):today();
+};
+const feedReplyEntry = (r,i,o) => `<div class="reply feed-reply-card"><div class="row">${r.image?`<img class="avatar" src="${esc(r.image)}" alt="">`:`<span class="avatar avatar-fallback">${esc(String(r.author||'ファン').slice(0,1))}</span>`}<div class="grow"><strong>${esc(r.author||'ファン')}</strong> <span class="pill role-member">MEMBER</span><div class="meta">${day(r.when)}</div></div></div><p>${esc(r.text||'')}</p><div class="feed-reply-actions"><button class="button secondary" type="button" onclick="feedReplyOpen('${o.id}',${i})">編集</button><button class="button danger" type="button" onclick="feedReplyDelete('${o.id}',${i})">削除</button></div></div>`;
+const feedReplyPanel = o => `<section class="feed-reply-editor" id="feedReplyPanel" hidden><h3 id="feedReplyPanelHeading">ファンからの返信を追加</h3><label class="field">ファン名<input id="feedReplyName" placeholder="例：sakura_25" autocomplete="off"></label><label class="field">返信<textarea id="reply" placeholder="返信の内容"></textarea></label><label class="field">返信日時<input id="feedReplyWhen" type="datetime-local" value="${today()}"></label><label class="field">プロフィール写真（任意）<input id="feedReplyImage" type="file" accept="image/*"></label><div id="feedReplyExistingPhoto" class="muted" hidden>現在のプロフィール写真を維持します。変更する場合は新しい写真を選択してください。 <label><input type="checkbox" id="feedReplyRemovePhoto"> 現在の写真を削除する</label></div><p class="muted">返信ごとにファン名・日付・写真を設定できます。ラベルはMEMBER固定です。</p><div class="actions"><button class="button" type="button" onclick="feedReplySave('${o.id}')" id="feedReplySaveButton">返信を保存</button><button class="button secondary" type="button" onclick="feedReplyClose()">キャンセル</button></div></section>`;
+let feedReplyEditIndex=-1;
 const poster = (o, thread=false) => {
   const guest=thread?!!o.threadGuest?.enabled:!!o.feedGuest?.enabled;
   const guestData=thread?o.threadGuest:o.feedGuest;
@@ -48,9 +59,67 @@ threadCard=function(o){return `<article class="card" onclick="detail('${o.id}')"
 feedCard=function(o){return `<article class="card" onclick="detail('${o.id}')">${poster(o)}<p>${esc(o.body||o.title)}</p>${o.images?.length?`<div class="photos">${o.images.map(src=>`<img src="${src}" alt="投稿写真">`).join('')}</div>`:''}${reactionSummary(o)}</article>`};
 const previousDetail=showDetail;
 showDetail=function(o){
- if(o.type==='FEED')return `<button class="button secondary" onclick="back()">‹ 戻る</button><div class="meta" style="margin-top:12px">FEED</div><div class="card">${poster(o)}<p>${esc(o.body||o.title)}</p>${(o.images||[]).length?`<div class="photos">${o.images.map((src,i)=>`<img src="${src}" alt="投稿写真" onclick="viewer('${o.id}',${i})">`).join('')}</div>`:''}${reactionSummary(o)}</div><h3>返信 ${(o.replies||[]).length}件</h3><div class="feed-replies">${(o.replies||[]).map(r=>`<div class="reply feed-reply-card"><div class="row">${r.image?`<img class="avatar" src="${esc(r.image)}" alt="">`:`<span class="avatar avatar-fallback">${esc(String(r.author||'ファン').slice(0,1))}</span>`}<div><strong>${esc(r.author||'ファン')}</strong> <span class="pill role-member">MEMBER</span><div class="meta">${day(r.when)}</div></div></div><p>${esc(r.text||'')}</p></div>`).join('')}</div><section class="feed-reply-editor"><h3>ファンからの返信を追加</h3><label class="field">ファン名<input id="feedReplyName" placeholder="例：sakura_25" autocomplete="off"></label><label class="field">返信<textarea id="reply" placeholder="返信の内容"></textarea></label><label class="field">プロフィール写真（任意）<input id="feedReplyImage" type="file" accept="image/*"></label><p class="muted">返信ごとにファン名を設定できます。ラベルはMEMBER固定です。</p><button class="button" type="button" onclick="addReply('${o.id}')">返信を保存</button></section>${postActions(o)}`;
+ if(o.type==='FEED')return `<button class="button secondary" onclick="back()">‹ 戻る</button><div class="meta" style="margin-top:12px">FEED</div><div class="card">${poster(o)}<p>${esc(o.body||o.title)}</p>${(o.images||[]).length?`<div class="photos">${o.images.map((src,i)=>`<img src="${src}" alt="投稿写真" onclick="viewer('${o.id}',${i})">`).join('')}</div>`:''}${reactionSummary(o)}</div><div class="feed-reply-title"><h3>返信 ${feedReplyCount(o).toLocaleString('ja-JP')}件</h3><div class="actions"><button class="button secondary" type="button" onclick="feedReplyOpen('${o.id}',-1)">＋ 返信</button><button class="button secondary" type="button" onclick="feedReplyCountOpen()">件数を設定</button></div></div><div id="feedReplyCountPanel" class="feed-reply-count-panel" hidden><label class="field">表示する返信件数（0以上の整数）<input id="feedReplyCountInput" type="number" min="0" step="1" inputmode="numeric" value="${feedReplyCount(o)}"></label><p class="muted">件数の表示だけを変更します。保存済みの返信本文は削除されません。</p><div class="actions"><button class="button" type="button" onclick="feedReplyCountSave('${o.id}')">件数を保存</button><button class="button secondary" type="button" onclick="feedReplyCountReset('${o.id}')">実際の返信数に戻す</button><button class="button secondary" type="button" onclick="feedReplyCountClose()">閉じる</button></div></div><div class="feed-replies">${(o.replies||[]).map((r,i)=>feedReplyEntry(r,i,o)).join('')}</div>${feedReplyPanel(o)}${postActions(o)}`;
  if(o.type==='THREAD')return `<button class="button secondary" onclick="back()">‹ 戻る</button><div class="meta" style="margin-top:12px">THREAD</div><div class="card">${poster(o,true)}<p>${esc(o.body||o.title)}</p>${(o.images||[]).length?`<div class="photos">${o.images.map((src,i)=>`<img src="${src}" onclick="viewer('${o.id}',${i})" alt="投稿写真">`).join('')}</div>`:''}</div><h3>返信 ${(o.replies||[]).length}件</h3>${(o.replies||[]).map(r=>`<div class="reply"><div class="meta">${esc(r.author)} · ${day(r.when)}</div>${esc(r.text)}</div>`).join('')}<label class="field">返信<textarea id="reply" placeholder="返信を書く"></textarea></label><button class="button" onclick="addReply('${o.id}')">返信を保存</button>${postActions(o)}`;
  return previousDetail(o);
+};
+window.feedReplyOpen=function(id,index=-1){
+ const o=data.find(x=>x.id===id),r=index>=0?o?.replies?.[index]:null;
+ if(!o||o.type!=='FEED'||(index>=0&&!r))return alert('返信が見つかりません。');
+ feedReplyEditIndex=index;
+ const panel=document.getElementById('feedReplyPanel');if(!panel)return;
+ panel.hidden=false;
+ document.getElementById('feedReplyPanelHeading').textContent=index>=0?'返信を編集':'ファンからの返信を追加';
+ document.getElementById('feedReplyName').value=r?.author||'';
+ document.getElementById('reply').value=r?.text||'';
+ document.getElementById('feedReplyWhen').value=r?formatReplyDate(r.when):today();
+ document.getElementById('feedReplyImage').value='';
+ document.getElementById('feedReplyExistingPhoto').hidden=!r?.image;
+ document.getElementById('feedReplyRemovePhoto').checked=false;
+ document.getElementById('feedReplySaveButton').textContent=index>=0?'変更を保存':'返信を保存';
+ panel.scrollIntoView({block:'nearest',behavior:'smooth'});
+};
+window.feedReplyClose=function(){const panel=document.getElementById('feedReplyPanel');if(panel)panel.hidden=true;feedReplyEditIndex=-1;};
+window.feedReplySave=async function(id){
+ const o=data.find(x=>x.id===id);if(!o||o.type!=='FEED')return alert('投稿が見つかりません。');
+ const author=document.getElementById('feedReplyName')?.value.trim();
+ const message=document.getElementById('reply')?.value.trim();
+ const when=document.getElementById('feedReplyWhen')?.value;
+ if(!author)return alert('ファン名を入力してください。');
+ if(!message)return alert('返信内容を入力してください。');
+ if(!when||!Number.isFinite(new Date(when).getTime()))return alert('有効な返信日時を入力してください。');
+ const index=feedReplyEditIndex;
+ const replies=[...(o.replies||[])];
+ if(index>=0&&!replies[index])return alert('編集する返信が見つかりません。');
+ const original=index>=0?replies[index]:{};
+ const reply={...original,author,text:message,when};
+ if(document.getElementById('feedReplyRemovePhoto')?.checked)delete reply.image;
+ const file=document.getElementById('feedReplyImage')?.files?.[0];
+ if(file){try{reply.image=await readFile(file)}catch(err){return alert('画像を読み込めませんでした: '+err.message)}}
+ if(index>=0)replies[index]=reply;else replies.push(reply);
+ const btn=document.getElementById('feedReplySaveButton');if(btn)btn.disabled=true;
+ try{await put({...o,replies});feedReplyEditIndex=-1;await update()}
+ catch(err){alert('返信を保存できませんでした: '+(err.message||err));if(btn)btn.disabled=false}
+};
+window.feedReplyDelete=async function(id,index){
+ const o=data.find(x=>x.id===id);if(!o||o.type!=='FEED'||!o.replies?.[index])return alert('返信が見つかりません。');
+ if(!confirm('この返信を削除しますか？'))return;
+ const replies=o.replies.filter((_,i)=>i!==index);
+ try{await put({...o,replies});feedReplyEditIndex=-1;await update()}catch(err){alert('返信を削除できませんでした: '+(err.message||err))}
+};
+window.feedReplyCountOpen=function(){const panel=document.getElementById('feedReplyCountPanel');if(panel)panel.hidden=false};
+window.feedReplyCountClose=function(){const panel=document.getElementById('feedReplyCountPanel');if(panel)panel.hidden=true};
+window.feedReplyCountSave=async function(id){
+ const o=data.find(x=>x.id===id),raw=document.getElementById('feedReplyCountInput')?.value;
+ if(!o||o.type!=='FEED')return;
+ const n=Number(raw);
+ if(raw===''||!Number.isSafeInteger(n)||n<0)return alert('0以上の整数を入力してください。');
+ try{await put({...o,feedReplyCountOverride:n});await update()}catch(err){alert('件数を保存できませんでした: '+(err.message||err))}
+};
+window.feedReplyCountReset=async function(id){
+ const o=data.find(x=>x.id===id);if(!o||o.type!=='FEED')return;
+ const next={...o};delete next.feedReplyCountOverride;
+ try{await put(next);await update()}catch(err){alert('件数を戻せませんでした: '+(err.message||err))}
 };
 function postActions(o){return `<div class="actions"><button class="button secondary" onclick="favorite('${o.id}')">${o.fav?'♥ 登録済み':'♡ お気に入り'}</button><button class="button secondary" onclick="editor('${o.id}')">編集</button><button class="button danger" onclick="removeItem('${o.id}')">削除</button></div>`}
 let feedDraft=[],feedEditingId=null,guestDraftImage='',threadGuestMode='registered';
