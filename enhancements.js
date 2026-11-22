@@ -23,7 +23,7 @@ const makeRandomFeedReactions = () => {
   const count=6+Math.floor(Math.random()*2);
   return ids.slice(0,count).map(i=>({
     id:reactionKey(i),
-    count:1000+Math.floor(Math.random()*2001)
+    count:1000+Math.floor(Math.random()*19001)
   }));
 };
 const reactionIcon = (r, cls='reaction-icon') => {
@@ -62,7 +62,7 @@ editor=function(id){
    oldEditor(id);
    const form=document.getElementById('editform');if(!form)return;
    const area=document.createElement('section');area.className='reaction-edit-area';
-   area.innerHTML=`<h3>画像リアクション</h3><p class="muted">新規投稿は6〜7種類・各1.0K〜3.0Kを自動設定します。手動で種類・件数を変更できます。ランダム生成を押すと現在のリアクション設定が置き換わります。</p><div id="feedReactionRows"></div><div class="actions"><button class="button secondary" type="button" onclick="feedReactionPicker()">＋ リアクションを選ぶ</button><button class="button secondary" type="button" onclick="feedRandomizeReactions()">↻ ランダム生成</button></div>`;
+   area.innerHTML=`<h3>画像リアクション</h3><p class="muted">新規投稿は6〜7種類・各1.0K〜20.0Kを自動設定します。手動で種類・件数を変更できます。ランダム生成を押すと現在のリアクション設定が置き換わります。</p><div id="feedReactionRows"></div><div class="actions"><button class="button secondary" type="button" onclick="feedReactionPicker()">＋ リアクションを選ぶ</button><button class="button secondary" type="button" onclick="feedRandomizeReactions()">↻ ランダム生成</button></div>`;
    form.querySelector('.actions')?.before(area);drawFeedReactionRows();
  }else if(type==='THREAD'){
    threadGuestMode=item?.threadGuest?.enabled?'guest':'registered';guestDraftImage=item?.threadGuest?.image||'';
