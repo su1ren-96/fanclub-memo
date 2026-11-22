@@ -37,9 +37,10 @@ const reactionSummary = o => {
   return `<div class="feed-reaction-summary">${a.map(r=>`<span class="feed-reaction-chip">${reactionIcon(r)}<span>${formatReactionCount(r.count)}</span></span>`).join('')}${!a.length?'<span class="meta">リアクションなし</span>':''}</div>`;
 };
 const poster = (o, thread=false) => {
-  const guest=thread&&o.threadGuest?.enabled;
-  const name=guest?(o.threadGuest.name||o.artist||'MEMBER'):(o.artist||'投稿者未設定');
-  const icon=guest?(o.threadGuest.image?`<img class="avatar" src="${esc(o.threadGuest.image)}" alt="">`:`<span class="avatar avatar-fallback">${esc(name.slice(0,1))}</span>`):avatar(name);
+  const guest=thread?!!o.threadGuest?.enabled:!!o.feedGuest?.enabled;
+  const guestData=thread?o.threadGuest:o.feedGuest;
+  const name=guest?(guestData.name||o.artist||'MEMBER'):(o.artist||'投稿者未設定');
+  const icon=guest?(guestData.image?`<img class="avatar" src="${esc(guestData.image)}" alt="">`:`<span class="avatar avatar-fallback">${esc(name.slice(0,1))}</span>`):avatar(name);
   const label=guest?'<span class="pill role-member">MEMBER</span>':roleBadge(name);
   return `<div class="row">${icon}<div class="post-identity"><div class="post-identity-name"><strong>${esc(name)}</strong> ${label}</div><div class="meta">${day(o.when)}</div></div></div>`;
 };
@@ -47,7 +48,7 @@ threadCard=function(o){return `<article class="card" onclick="detail('${o.id}')"
 feedCard=function(o){return `<article class="card" onclick="detail('${o.id}')">${poster(o)}<p>${esc(o.body||o.title)}</p>${o.images?.length?`<div class="photos">${o.images.map(src=>`<img src="${src}" alt="投稿写真">`).join('')}</div>`:''}${reactionSummary(o)}</article>`};
 const previousDetail=showDetail;
 showDetail=function(o){
- if(o.type==='FEED')return `<button class="button secondary" onclick="back()">‹ 戻る</button><div class="meta" style="margin-top:12px">FEED</div><div class="card">${poster(o)}<p>${esc(o.body||o.title)}</p>${(o.images||[]).length?`<div class="photos">${o.images.map((src,i)=>`<img src="${src}" alt="投稿写真" onclick="viewer('${o.id}',${i})">`).join('')}</div>`:''}${reactionSummary(o)}</div>${postActions(o)}`;
+ if(o.type==='FEED')return `<button class="button secondary" onclick="back()">‹ 戻る</button><div class="meta" style="margin-top:12px">FEED</div><div class="card">${poster(o)}<p>${esc(o.body||o.title)}</p>${(o.images||[]).length?`<div class="photos">${o.images.map((src,i)=>`<img src="${src}" alt="投稿写真" onclick="viewer('${o.id}',${i})">`).join('')}</div>`:''}${reactionSummary(o)}</div><h3>返信 ${(o.replies||[]).length}件</h3><div class="feed-replies">${(o.replies||[]).map(r=>`<div class="reply feed-reply-card"><div class="row">${r.image?`<img class="avatar" src="${esc(r.image)}" alt="">`:`<span class="avatar avatar-fallback">${esc(String(r.author||'ファン').slice(0,1))}</span>`}<div><strong>${esc(r.author||'ファン')}</strong> <span class="pill role-member">MEMBER</span><div class="meta">${day(r.when)}</div></div></div><p>${esc(r.text||'')}</p></div>`).join('')}</div><section class="feed-reply-editor"><h3>ファンからの返信を追加</h3><label class="field">ファン名<input id="feedReplyName" placeholder="例：sakura_25" autocomplete="off"></label><label class="field">返信<textarea id="reply" placeholder="返信の内容"></textarea></label><label class="field">プロフィール写真（任意）<input id="feedReplyImage" type="file" accept="image/*"></label><p class="muted">返信ごとにファン名を設定できます。ラベルはMEMBER固定です。</p><button class="button" type="button" onclick="addReply('${o.id}')">返信を保存</button></section>${postActions(o)}`;
  if(o.type==='THREAD')return `<button class="button secondary" onclick="back()">‹ 戻る</button><div class="meta" style="margin-top:12px">THREAD</div><div class="card">${poster(o,true)}<p>${esc(o.body||o.title)}</p>${(o.images||[]).length?`<div class="photos">${o.images.map((src,i)=>`<img src="${src}" onclick="viewer('${o.id}',${i})" alt="投稿写真">`).join('')}</div>`:''}</div><h3>返信 ${(o.replies||[]).length}件</h3>${(o.replies||[]).map(r=>`<div class="reply"><div class="meta">${esc(r.author)} · ${day(r.when)}</div>${esc(r.text)}</div>`).join('')}<label class="field">返信<textarea id="reply" placeholder="返信を書く"></textarea></label><button class="button" onclick="addReply('${o.id}')">返信を保存</button>${postActions(o)}`;
  return previousDetail(o);
 };
@@ -64,6 +65,11 @@ editor=function(id){
    const area=document.createElement('section');area.className='reaction-edit-area';
    area.innerHTML=`<h3>画像リアクション</h3><p class="muted">新規投稿は6〜7種類・各1.0K〜20.0Kを自動設定します。手動で種類・件数を変更できます。ランダム生成を押すと現在のリアクション設定が置き換わります。</p><div id="feedReactionRows"></div><div class="actions"><button class="button secondary" type="button" onclick="feedReactionPicker()">＋ リアクションを選ぶ</button><button class="button secondary" type="button" onclick="feedRandomizeReactions()">↻ ランダム生成</button></div>`;
    form.querySelector('.actions')?.before(area);drawFeedReactionRows();
+   threadGuestMode=item?.feedGuest?.enabled?'guest':'registered';guestDraftImage=item?.feedGuest?.image||'';
+   const authorArea=document.createElement('section');authorArea.className='thread-guest-editor';
+   authorArea.innerHTML=`<h3>投稿者</h3><div class="thread-mode-choices"><label><input type="radio" name="feedAuthorMode" value="registered" ${threadGuestMode==='registered'?'checked':''} onchange="threadToggleAuthor(this.value)"> 登録済みARTIST／STAFF</label><label><input type="radio" name="feedAuthorMode" value="guest" ${threadGuestMode==='guest'?'checked':''} onchange="threadToggleAuthor(this.value)"> 投稿ごとにファン名を設定</label></div><div id="threadGuestFields"><label class="field">ファン名<input id="threadGuestName" value="${esc(item?.feedGuest?.name||'')}" placeholder="好きなファン名"></label><label class="field">プロフィール写真（任意）<input id="threadGuestFile" type="file" accept="image/*" onchange="threadGuestPreview(this)"></label><div id="threadGuestPreview">${guestDraftImage?`<img class="avatar" src="${esc(guestDraftImage)}" alt="プロフィール写真">`:''}</div><button type="button" class="button secondary" onclick="threadGuestClearPhoto()">写真を外す</button><p class="muted">この投稿だけのファン名・写真です。ラベルはMEMBER固定、アカウント一覧には追加しません。</p></div>`;
+   form.querySelector('[name="artist"]')?.closest('label')?.before(authorArea);
+   threadToggleAuthor(threadGuestMode);
  }else if(type==='THREAD'){
    threadGuestMode=item?.threadGuest?.enabled?'guest':'registered';guestDraftImage=item?.threadGuest?.image||'';
    oldEditor(id);
@@ -100,10 +106,10 @@ save=async function(ev){
  if(type!=='FEED'&&type!=='THREAD'){const oldScreen=snapshot();persistScroll();await oldSave(ev);recordTransition(oldScreen);return;}
  ev.preventDefault();document.activeElement?.blur?.();
  const form=ev.target,d=new FormData(form),isNew=!editing;
- if(type==='FEED'&&!d.get('artist'))return alert('投稿者を選択してください。');
- const mode=type==='THREAD'?threadGuestMode:'registered';
- const guestName=type==='THREAD'&&mode==='guest'?document.getElementById('threadGuestName')?.value.trim():'';
- if(type==='THREAD'&&mode==='guest'&&!guestName)return alert('ファンの表示名を入力してください。');
+ if(type==='FEED'&&threadGuestMode!=='guest'&&!d.get('artist'))return alert('投稿者を選択してください。');
+ const mode=threadGuestMode;
+ const guestName=mode==='guest'?document.getElementById('threadGuestName')?.value.trim():'';
+ if(mode==='guest'&&!guestName)return alert('ファンの表示名を入力してください。');
  const button=form.querySelector('button[type="submit"]');if(button)button.disabled=true;
  try{
    const o=isNew?{id:uuid(),type,images:[],replies:[],fav:false}:{...item};
@@ -111,7 +117,7 @@ save=async function(ev){
    const gone=[...form.querySelectorAll('.removePhoto:checked')].map(x=>Number(x.value));
    o.images=(o.images||[]).filter((_,i)=>!gone.includes(i));
    for(const f of (form.querySelector('#photos')?.files||[]))o.images.push(await readFile(f));
-   if(type==='FEED')o.feedReactions=feedDraft.map(r=>({...r,count:Math.max(0,Math.floor(Number(r.count)||0))}));
+   if(type==='FEED'){o.feedReactions=feedDraft.map(r=>({...r,count:Math.max(0,Math.floor(Number(r.count)||0))}));o.feedGuest=mode==='guest'?{enabled:true,name:guestName,image:guestDraftImage}:{enabled:false};}
    if(type==='THREAD')o.threadGuest=mode==='guest'?{enabled:true,name:guestName,image:guestDraftImage}:{enabled:false};
    const beforeSave=snapshot();persistScroll();
    await put(o);dismissOverlay();selected=o.id;page=type;await update();window.scrollTo(0,0);
