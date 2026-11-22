@@ -341,4 +341,15 @@ body:has(#messageComposer) main{padding-bottom:calc(240px + env(safe-area-inset-
 .artist-profile-field-actions .button{padding:6px 10px;font-size:12px}
 .artist-profile-photo-preview img{max-width:200px;max-height:220px;display:block;width:auto;height:auto;object-fit:contain;border-radius:12px;margin:9px 0}
 @media(max-width:410px){.artist-profile-field-inputs{grid-template-columns:1fr}}
-</style></head><body><header><button class="icon" onclick="searchPage()">⌕</button><b>MAKE NEW WAVE</b><button class="icon" onclick="drawer(true)">☰</button></header><main id="app"></main><nav id="nav" class="bottom"></nav><div id="menu"></div><div id="modal"></div><script src="app.js?v=6.13-thread-retired" defer></script><script src="extension.js?v=6.8" defer></script><script src="greeting.js?v=6.10" defer></script><script src="information.js?v=2" defer></script><script src="enhancements.js?v=7-navigation-editor-fix" defer></script><script src="home-renewal.js?v=4-profile-message-special-k" defer></script><script src="artist-profile.js?v=1" defer></script></body></html>
+
+/* Full-bleed vertical HOME image. Preserve existing spacing for all sections. */
+.home-visual-bleed{width:100vw;width:100dvw;position:relative;left:50%;margin-left:-50vw;margin-top:-17px;margin-bottom:10px;overflow:hidden;aspect-ratio:3/4;background:linear-gradient(135deg,#f7deef,#e8ddfa 60%,#dbeaf8)}
+.home-visual-image{display:block;width:100%;height:100%;object-fit:cover;object-position:center center;border:0;border-radius:0}
+.home-visual-placeholder{height:100%;width:100%;background:linear-gradient(135deg,#f6deee,#e8dff9 65%,#dfecf9)}
+.home-profile{display:block!important;cursor:default!important;scroll-margin-top:calc(75px + env(safe-area-inset-top))}
+.home-profile .artist-profile-home-heading{align-items:center}
+.home-profile .artist-profile-home-heading h1{font-size:15px;margin:0 0 8px}
+.home-profile .artist-profile-view{padding:0!important}
+.home-profile .artist-profile-hero{max-height:520px}
+.home-profile .artist-profile-empty{padding:8px 0}
+</style></head><body><header><button class="icon" onclick="searchPage()">⌕</button><b>MAKE NEW WAVE</b><button class="icon" onclick="drawer(true)">☰</button></header><main id="app"></main><nav id="nav" class="bottom"></nav><div id="menu"></div><div id="modal"></div><script src="app.js?v=6.14-menu-labels" defer></script><script src="extension.js?v=6.8" defer></script><script src="greeting.js?v=6.10" defer></script><script src="information.js?v=2" defer></script><script src="enhancements.js?v=7-navigation-editor-fix" defer></script><script src="home-renewal.js?v=5-fullbleed-profile" defer></script><script src="artist-profile.js?v=2-home-integrated" defer></script><script src="home-visual.js?v=1" defer></script></body></html>

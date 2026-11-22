@@ -17,6 +17,24 @@ function artistView(){
  (o?`<section class="artist-profile-view tile">${o.images?.[0]?`<img class="artist-profile-hero" src="${attr(o.images[0])}" alt="プロフィール写真">`:''}<div class="artist-profile-name"><span class="meta">ARTIST PROFILE</span><h2>${clean(o.title||'名前未登録')}</h2></div><div class="artist-profile-facts">${fields.filter(f=>f.label&&f.value).map(f=>`<div class="artist-profile-fact"><span>${clean(f.label)}</span><strong>${clean(f.value)}</strong></div>`).join('')||'<div class="home-empty">プロフィール項目はまだありません</div>'}</div></section>`:
  `<section class="tile artist-profile-empty"><p>アーティストのプロフィールはまだ登録されていません。</p><button class="button" type="button" onclick="artistProfileEdit()">プロフィールを登録</button></section>`);
 }
+// HOME reuses the existing profile detail layout, rather than a new summary card.
+window.artistProfileHomeMarkup=function(){
+ const o=artistRecord();
+ const fields=o?.profileFields||[];
+ return `<div class="heading artist-profile-home-heading"><h1>PROFILE</h1><button class="button" type="button" onclick="artistProfileEdit()">${o?'編集':'＋ 登録'}</button></div>`+
+ (o?`<div class="artist-profile-view">${o.images?.[0]?`<img class="artist-profile-hero" src="${attr(o.images[0])}" alt="プロフィール写真">`:''}<div class="artist-profile-name"><span class="meta">ARTIST PROFILE</span><h2>${clean(o.title||'名前未登録')}</h2></div><div class="artist-profile-facts">${fields.filter(f=>f.label&&f.value).map(f=>`<div class="artist-profile-fact"><span>${clean(f.label)}</span><strong>${clean(f.value)}</strong></div>`).join('')||'<div class="home-empty">プロフィール項目はまだありません</div>'}</div></div>`:
+ `<div class="artist-profile-empty"><p>アーティストのプロフィールはまだ登録されていません。</p><button class="button" type="button" onclick="artistProfileEdit()">プロフィールを登録</button></div>`);
+};
+// The old PROFILE route now locates the corresponding section on HOME.
+const originalGoArtist=go;
+go=function(destination){
+ if(destination==='PROFILE'){
+   originalGoArtist('HOME');
+   requestAnimationFrame(()=>document.getElementById('homeArtistProfile')?.scrollIntoView({block:'start'}));
+   return;
+ }
+ return originalGoArtist(destination);
+};
 const originalRender=render;
 render=function(){if(page==='PROFILE'&&!selected){originalRender();$('#app').innerHTML=artistView();return}return originalRender()};
 function gatherFields(){
