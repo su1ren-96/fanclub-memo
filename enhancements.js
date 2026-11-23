@@ -343,7 +343,7 @@ if(standalone&&!iosNativeSwipe){
  document.addEventListener('touchstart',ev=>{
   touchStart=null;if(ev.touches.length!==1)return;
   const t=ev.touches[0];
-  if(t.clientX>28||ev.target.closest('.viewer,.wardrobe-pages,.photos,.gallery-masonry,.overlay,.reaction-picker-shade,.ch-shorts,.home-thread-scroller,input,textarea,select'))return;
+  if(t.clientX>28||ev.target.closest('.viewer,.wardrobe-pages,.photos,.gallery-masonry,.overlay,.reaction-picker-shade,.ch-shorts,.home-thread-scroller,.home-movie-scroller,input,textarea,select'))return;
   touchStart={x:t.clientX,y:t.clientY};
  },{passive:true});
  document.addEventListener('touchend',ev=>{

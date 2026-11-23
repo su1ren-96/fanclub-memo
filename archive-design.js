@@ -2,21 +2,34 @@
 (function(){
 'use strict';
 const safe=e;
-const colors=[['#d8e9ff','#f6d8e9'],['#e8ddfb','#d3e9fa'],['#f6dce9','#e5dffa']];
-const metaFor=(o,i)=>o.archiveItems?.[i]||{};
-const folderSvg=(idx)=>{
- const c=colors[idx%colors.length];return `<svg class="archive-folder-svg" viewBox="0 0 110 108" aria-hidden="true" focusable="false"><defs><linearGradient id="ar-folder-${idx%3}" x1="0" y1="1" x2="1" y2="0"><stop offset="0%" stop-color="${c[0]}"></stop><stop offset="100%" stop-color="${c[1]}"></stop></linearGradient></defs><path d="M7 25 Q7 17 16 17 H39 Q45 17 51 23 L58 29 H94 Q103 29 103 39 V88 Q103 97 94 97 H16 Q7 97 7 88 Z" fill="url(#ar-folder-${idx%3})"></path><path d="M14 40 H96" stroke="#fff" stroke-width="3" stroke-linecap="round" opacity=".78"></path></svg>`;
+// Give every folder a stable, distinct pastel shade.  Golden-angle distribution
+// avoids repeating a three-color palette.  Newly edited/created folders store
+// their hue with their archive record; legacy folders derive it deterministically
+// from their original creation order (never from current listing order).
+const legacyHueMap=()=>{
+ const folders=data.filter(o=>o.type==='ARCHIVE').slice().sort((a,b)=>
+  (new Date(a.when||0).getTime()||0)-(new Date(b.when||0).getTime()||0)||String(a.id).localeCompare(String(b.id)));
+ const map=new Map();
+ folders.forEach((o,i)=>map.set(String(o.id),Number.isFinite(Number(o.archiveFolderHue))&&o.archiveFolderHue!==undefined&&o.archiveFolderHue!==null
+  ?Number(o.archiveFolderHue):((335+i*137.50776405)%360)));
+ return map;
+};
+const hueFor=o=>legacyHueMap().get(String(o.id))??335;
+const folderSvg=o=>{
+ const hue=hueFor(o),light=`hsl(${hue.toFixed(3)},64%,89%)`,dark=`hsl(${hue.toFixed(3)},63%,79%)`;
+ const gid='ar-folder-'+String(o.id).replace(/[^a-zA-Z0-9_-]/g,'').slice(0,48);
+ return `<svg class="archive-folder-svg" viewBox="0 0 110 108" aria-hidden="true" focusable="false"><defs><linearGradient id="${gid}" x1="0" y1="1" x2="1" y2="0"><stop offset="0%" stop-color="${dark}"></stop><stop offset="100%" stop-color="${light}"></stop></linearGradient></defs><path d="M7 25 Q7 17 16 17 H39 Q45 17 51 23 L58 29 H94 Q103 29 103 39 V88 Q103 97 94 97 H16 Q7 97 7 88 Z" fill="url(#${gid})"></path><path d="M14 40 H96" stroke="#fff" stroke-width="3" stroke-linecap="round" opacity=".78"></path></svg>`;
 };
 window.archiveFolderSvg=folderSvg;
 window.archiveHomeFolders=function(items){
  if(!items.length)return '<div class="home-empty">資料はまだ登録されていません</div>';
- return `<div class="archive-home-grid">${items.slice(0,3).map((o,i)=>`<div class="archive-folder-item archive-home-item" role="button" tabindex="0" aria-label="${safe(o.title||'無題')}を開く" onclick="detail('${safe(o.id)}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();detail('${safe(o.id)}')}">${folderSvg(i)}<span class="archive-folder-title">${safe(o.title||'無題')}</span></div>`).join('')}</div>`;
+ return `<div class="archive-home-grid">${items.slice(0,3).map((o,i)=>`<div class="archive-folder-item archive-home-item" role="button" tabindex="0" aria-label="${safe(o.title||'無題')}を開く" onclick="detail('${safe(o.id)}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();detail('${safe(o.id)}')}">${folderSvg(o)}<span class="archive-folder-title">${safe(o.title||'無題')}</span></div>`).join('')}</div>`;
 };
 const oldListing=listing;
 listing=function(arr){
  if(page!=='ARCHIVE')return oldListing(arr);
  if(!arr.length)return '<div class="empty">資料はまだ登録されていません。「＋ 追加」から登録できます。</div>';
- return `<div class="archive-folder-grid">${arr.map((o,i)=>`<article class="archive-folder-item" role="button" tabindex="0" onclick="detail('${safe(o.id)}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();detail('${safe(o.id)}')}">${folderSvg(i)}<span class="archive-folder-title">${safe(o.title||'無題')}</span></article>`).join('')}</div>`;
+ return `<div class="archive-folder-grid">${arr.map((o,i)=>`<article class="archive-folder-item" role="button" tabindex="0" onclick="detail('${safe(o.id)}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();detail('${safe(o.id)}')}">${folderSvg(o)}<span class="archive-folder-title">${safe(o.title||'無題')}</span></article>`).join('')}</div>`;
 };
 const oldFilter=filterbar;
 filterbar=function(){
@@ -66,6 +79,7 @@ window.archiveSave=async function(ev){
  o.title=form.elements.title.value.trim();o.body=form.elements.body.value;
  o.images=draft.map(item=>item.src);
  o.archiveItems=draft.map(item=>({name:String(item.name||'').trim(),year:String(item.year||'').trim()}));
+ if(!Number.isFinite(Number(o.archiveFolderHue))||o.archiveFolderHue==null){o.archiveFolderHue=hueFor(o);if(!old){const others=data.filter(x=>x.type==='ARCHIVE').length;o.archiveFolderHue=(335+others*137.50776405)%360;}}
  if(!o.title){alert('フォルダ名を入力してください');if(button)button.disabled=false;return}
  try{await put(o);dismissOverlay();selected=o.id;await update();window.scrollTo(0,0)}
  catch(err){alert('保存できませんでした: '+(err?.message||err));if(button)button.disabled=false}
