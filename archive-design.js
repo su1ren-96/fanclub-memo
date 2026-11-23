@@ -2,6 +2,16 @@
 (function(){
 'use strict';
 const safe=e;
+// Image labels and optional years are stored alongside the existing images.
+// Older ARCHIVE records have no archiveItems: keep their photos readable.
+function metaFor(folder,index){
+ const items=Array.isArray(folder?.archiveItems)?folder.archiveItems:[];
+ const item=items[index];
+ return {
+  name:typeof item?.name==='string'?item.name:'',
+  year:typeof item?.year==='string'?item.year:(typeof item?.year==='number'?String(item.year):'')
+ };
+}
 // Give every folder a stable, distinct pastel shade.  Golden-angle distribution
 // avoids repeating a three-color palette.  Newly edited/created folders store
 // their hue with their archive record; legacy folders derive it deterministically
