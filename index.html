@@ -388,6 +388,14 @@ body:has(#messageComposer) main{padding-bottom:calc(240px + env(safe-area-inset-
 /* FEED reply editing: keep creation and count controls collapsed until tapped. */
 .feed-reply-editor[hidden],.feed-reply-count-panel[hidden]{display:none!important}
 .feed-reply-title{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-top:22px}
+/* FEED comment count: icon + compact number in HOME/list; exact English count in detail. */
+.feed-comment-count{display:inline-flex;align-items:center;gap:5px;color:#8b7697;font-size:13px;font-weight:600;line-height:1.4;white-space:nowrap;font-variant-numeric:tabular-nums}
+.feed-comment-icon{display:block;width:16px;height:16px;flex:0 0 16px}
+.home-feed-comment-meta{margin-top:8px}
+.feed-list-comments{margin-top:12px;display:flex;align-items:center}
+.feed-comments-heading{display:flex;align-items:baseline;gap:6px;flex-wrap:wrap;font-weight:500}
+.feed-comments-number{color:#5d4c68;font-size:23px;line-height:1.2;font-weight:600;font-variant-numeric:tabular-nums}
+.feed-comments-unit{color:#927f9b;font-size:14px;font-weight:400}
 .feed-reply-title h3{margin:0}.feed-reply-title .actions{display:flex;flex-wrap:wrap;gap:7px}
 .feed-reply-actions{display:flex;gap:7px;justify-content:flex-end;margin-top:10px}
 .feed-reply-actions .button{padding:7px 13px;font-size:12px}
@@ -483,4 +491,4 @@ body:has(#messageComposer) main{padding-bottom:calc(240px + env(safe-area-inset-
 .info-members-edit{display:flex;align-items:center;gap:9px;font-weight:600}.info-members-edit input{width:auto;accent-color:#9675ad;margin:0}
 .home-news-meta{flex-wrap:wrap}
 @media(max-width:360px){.music-glass-grid{gap:10px}.music-glass-card{padding:8px;border-radius:22px}.music-glass-cover{border-radius:14px}.music-glass-info h3{font-size:13px}.info-members-text{letter-spacing:1px;margin-left:3px}}
-</style></head><body><header><button class="icon" onclick="searchPage()">⌕</button><b>MAKE NEW WAVE</b><button class="icon" onclick="drawer(true)">☰</button></header><main id="app"></main><nav id="nav" class="bottom"></nav><div id="menu"></div><div id="modal"></div><script src="app.js?v=6.15-music-members" defer></script><script src="extension.js?v=6.8" defer></script><script src="greeting.js?v=6.10" defer></script><script src="information.js?v=3-members" defer></script><script src="enhancements.js?v=7-navigation-editor-fix" defer></script><script src="home-renewal.js?v=7-members" defer></script><script src="artist-profile.js?v=3-settings-profile" defer></script><script src="home-visual.js?v=2-slideshow" defer></script><script src="music-design.js?v=1-glass-members" defer></script></body></html>
+</style></head><body><header><button class="icon" onclick="searchPage()">⌕</button><b>MAKE NEW WAVE</b><button class="icon" onclick="drawer(true)">☰</button></header><main id="app"></main><nav id="nav" class="bottom"></nav><div id="menu"></div><div id="modal"></div><script src="app.js?v=6.15-music-members" defer></script><script src="extension.js?v=6.8" defer></script><script src="greeting.js?v=6.10" defer></script><script src="information.js?v=3-members" defer></script><script src="enhancements.js?v=8-feed-comments-20261123" defer></script><script src="home-renewal.js?v=8-feed-comments-20261123" defer></script><script src="artist-profile.js?v=3-settings-profile" defer></script><script src="home-visual.js?v=2-slideshow" defer></script><script src="music-design.js?v=1-glass-members" defer></script></body></html>
