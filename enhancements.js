@@ -252,22 +252,42 @@ save=async function(ev){
  }catch(err){alert('保存できませんでした: '+(err.message||err));if(button)button.disabled=false}
 };
 
-// View-history navigation. The current screen and scroll position are stored in the browser history.
-const HISTORY_FLAG='__fcMemoNavigationV1';
-let navigationReady=false, navigationRestoring=false, navigationDepth=0;
+// Reliable navigation: each history entry keeps its parent screen and scroll position.
+const HISTORY_FLAG='__fcMemoNavigationV2';
+let navigationRestoring=false, navigationDepth=0, pendingBack=null;
+const screenId=s=>[s.page||'',s.selected||'',s.channelTab||'',s.channelSelected||''].join('\u001f');
 function snapshot(){return {page,selected,category,order,search,channelTab:typeof channelTab==='string'?channelTab:'home',channelSelected:typeof channelSelected==='string'?channelSelected:null,scrollY:Math.max(0,window.scrollY||0)}}
-function currentEntry(){return history.state&&history.state[HISTORY_FLAG]?history.state:null}
-function persistScroll(){const state=currentEntry();if(!state||navigationRestoring)return;history.replaceState({...state,snapshot:{...state.snapshot,scrollY:Math.max(0,window.scrollY||0)}},'')}
-function recordTransition(before){const after=snapshot();if(before.page===after.page&&before.selected===after.selected&&before.channelTab===after.channelTab&&before.channelSelected===after.channelSelected)return;navigationDepth++;history.pushState({[HISTORY_FLAG]:true,depth:navigationDepth,snapshot:after},'')}
-function navigate(fn){if(navigationRestoring)return fn();persistScroll();const before=snapshot();const result=fn();const after=snapshot();if(before.page===after.page&&before.selected===after.selected&&before.channelTab===after.channelTab&&before.channelSelected===after.channelSelected)return result;recordTransition(before);return result}
+function currentEntry(){return history.state?.[HISTORY_FLAG]?history.state:null}
+function persistScroll(){
+ const state=currentEntry();if(!state||navigationRestoring)return;
+ const y=Math.max(0,window.scrollY||0);
+ if(Math.abs((state.snapshot.scrollY||0)-y)<2)return;
+ history.replaceState({...state,snapshot:{...state.snapshot,scrollY:y}},'');
+}
+function recordTransition(before){
+ const after=snapshot();if(screenId(before)===screenId(after))return;
+ const parent=currentEntry();
+ navigationDepth=(parent?.depth??navigationDepth)+1;
+ history.pushState({[HISTORY_FLAG]:true,depth:navigationDepth,snapshot:after,parent:before},'');
+}
+function navigate(fn){
+ if(navigationRestoring)return fn();
+ persistScroll();const before=snapshot();const result=fn();recordTransition(before);return result;
+}
+let restoringId=0;
 function restoreScreen(s){
+ if(!s)return;
+ const id=++restoringId;
  navigationRestoring=true;
  page=s.page;selected=s.selected;category=s.category;order=s.order;search=s.search;
  if(typeof channelTab!=='undefined')channelTab=s.channelTab;
  if(typeof channelSelected!=='undefined')channelSelected=s.channelSelected;
- dismissOverlay();drawer(false);render();
- let attempt=0;const restore=()=>{window.scrollTo(0,s.scrollY||0);if(++attempt<6)setTimeout(restore,120)};
- requestAnimationFrame(()=>requestAnimationFrame(restore));setTimeout(()=>{navigationRestoring=false},850);
+ dismissOverlay();drawer(false);
+ // Paint content once instead of repeatedly replacing the DOM while returning.
+ render();
+ const y=Math.max(0,s.scrollY||0);
+ window.scrollTo({top:y,left:0,behavior:'instant'});
+ requestAnimationFrame(()=>{if(id!==restoringId)return;window.scrollTo({top:y,left:0,behavior:'instant'});navigationRestoring=false});
 }
 const oldGo=go,oldDetail=detail,oldSearchPage=searchPage;
 go=function(p){return navigate(()=>oldGo(p))};
@@ -276,22 +296,58 @@ searchPage=function(){return navigate(()=>oldSearchPage())};
 if(typeof channelOpen==='function'){const fn=channelOpen;channelOpen=function(id){return navigate(()=>fn(id))}}
 if(typeof chNavTab==='function'){const fn=chNavTab;chNavTab=function(tab){return navigate(()=>fn(tab))}}
 const originalBack=back;
-back=function(){const st=currentEntry();if(st&&st.depth>0){persistScroll();history.back()}else originalBack()};
-if(typeof chBack==='function'){const fn=chBack;chBack=function(){const st=currentEntry();if(st&&st.depth>0){persistScroll();history.back()}else fn()}}
-function initializeHistory(){if(navigationReady)return;navigationReady=true;history.scrollRestoration='manual';history.replaceState({[HISTORY_FLAG]:true,depth:0,snapshot:snapshot()},'')}
-initializeHistory();
-for(const name of ['infoSave','wardrobeSave','saveSpecial','greetingSave','saveChannelEntry']){
-  const original=window[name];if(typeof original!=='function')continue;
-  window[name]=async function(...args){const before=snapshot();persistScroll();await original.apply(this,args);recordTransition(before)};
+function navigationBack(){
+ const entry=currentEntry();if(!entry||entry.depth<1){originalBack();return}
+ persistScroll();
+ const parent=entry.parent;
+ if(parent){
+  // Restore the previous list immediately. This avoids the blank Safari frame
+  // that can occur while a browser-history back operation is pending.
+  pendingBack={depth:entry.depth-1,id:screenId(parent)};
+  restoreScreen(parent);
+ }
+ history.back();
 }
-window.addEventListener('popstate',ev=>{if(ev.state?.[HISTORY_FLAG]){navigationDepth=ev.state.depth;restoreScreen(ev.state.snapshot)}});
-let scrollPending=false;
-window.addEventListener('scroll',()=>{if(!scrollPending){scrollPending=true;requestAnimationFrame(()=>{scrollPending=false;persistScroll()})}},{passive:true});
-// Native Safari back gesture is used in browser tabs. Provide equivalent edge swipe in standalone PWA.
+back=navigationBack;
+if(typeof chBack==='function')chBack=navigationBack;
+try{history.scrollRestoration='manual'}catch(_){}
+// Old cached v1 entries are not reused as v2 entries (prevents stale HOME returns).
+history.replaceState({[HISTORY_FLAG]:true,depth:0,snapshot:snapshot(),parent:null},'');
+for(const name of ['infoSave','wardrobeSave','saveSpecial','greetingSave','saveChannelEntry']){
+ const original=window[name];if(typeof original!=='function')continue;
+ window[name]=async function(...args){const before=snapshot();persistScroll();await original.apply(this,args);recordTransition(before)};
+}
+window.addEventListener('popstate',ev=>{
+ const entry=ev.state?.[HISTORY_FLAG]?ev.state:null;
+ if(!entry){pendingBack=null;return}
+ navigationDepth=entry.depth;
+ if(pendingBack&&pendingBack.depth===entry.depth&&pendingBack.id===screenId(entry.snapshot)){
+  pendingBack=null;
+  // Already rendered the correct previous screen on touch release.
+  return;
+ }
+ pendingBack=null;restoreScreen(entry.snapshot);
+});
+// Throttle history writes; WebKit can stall when replaceState runs every scroll frame.
+let scrollTimer=0;
+window.addEventListener('scroll',()=>{
+ if(navigationRestoring)return;
+ clearTimeout(scrollTimer);scrollTimer=setTimeout(persistScroll,180);
+},{passive:true});
 let touchStart=null;
 const standalone=window.matchMedia?.('(display-mode: standalone)').matches||navigator.standalone===true;
 if(standalone){
- document.addEventListener('touchstart',ev=>{if(ev.touches.length!==1)return;const t=ev.touches[0];if(t.clientX>28||ev.target.closest('.viewer,.wardrobe-pages,.photos,.gallery-masonry,.overlay,.reaction-picker-shade,.ch-shorts'))return;touchStart={x:t.clientX,y:t.clientY,time:Date.now()};},{passive:true});
- document.addEventListener('touchend',ev=>{if(!touchStart)return;const t=ev.changedTouches[0],dx=t.clientX-touchStart.x,dy=t.clientY-touchStart.y;touchStart=null;if(dx>85&&Math.abs(dy)<70&&currentEntry()?.depth>0)back();},{passive:true});
+ document.addEventListener('touchstart',ev=>{
+  touchStart=null;if(ev.touches.length!==1)return;
+  const t=ev.touches[0];
+  if(t.clientX>28||ev.target.closest('.viewer,.wardrobe-pages,.photos,.gallery-masonry,.overlay,.reaction-picker-shade,.ch-shorts,.home-thread-scroller,input,textarea,select'))return;
+  touchStart={x:t.clientX,y:t.clientY};
+ },{passive:true});
+ document.addEventListener('touchend',ev=>{
+  if(!touchStart)return;const t=ev.changedTouches[0],dx=t.clientX-touchStart.x,dy=t.clientY-touchStart.y;
+  touchStart=null;if(dx>85&&Math.abs(dy)<70&&currentEntry()?.depth>0)navigationBack();
+ },{passive:true});
+ document.addEventListener('touchcancel',()=>{touchStart=null},{passive:true});
 }
+
 })();

@@ -4,8 +4,44 @@ function os(mode='readonly'){return db.transaction('items',mode).objectStore('it
 function accounts(){try{return JSON.parse(localStorage.getItem('fc_accounts')||'[]')}catch{return []}}
 function accountOptions(selected='',type=''){let names=type==='FEED'?accounts().filter(a=>['ARTIST','STAFF'].includes(a.role)).map(a=>a.name):[...accounts().map(a=>a.name),...data.map(o=>o.artist).filter(Boolean)];names=[...new Set(names)];if(selected&&!names.includes(selected))names.unshift(selected);return `<option value="">選択してください</option>${names.map(n=>`<option value="${e(n)}" ${n===selected?'selected':''}>${e(n)}${type==='FEED'&&role(n)?'（'+role(n)+'）':''}</option>`).join('')}`}
 function manageAccounts(){let names=accounts();$('#modal').innerHTML=`<div class="overlay"><div class="inner"><div class="heading"><h1>投稿者・送信者の管理</h1><button type="button" class="icon" onclick="dismissOverlay()">✕</button></div><p class="muted">FEED・MESSAGEで共通のアカウントを使用します。</p>${names.map((a,i)=>`<div class="card row"><div class="grow"><strong>${e(a.name)}</strong><div class="meta">${e(a.role||'ARTIST')}</div></div><button class="button secondary" onclick="editAccount(${i})">編集</button><button class="button danger" onclick="deleteAccount(${i})">削除</button></div>`).join('')}<button class="button" onclick="editAccount(-1)">＋ アカウント追加</button><button class="button secondary" onclick="dismissOverlay()">戻る</button></div></div>`}
-function editAccount(i){let a=accounts()[i]||{name:'',role:'ARTIST',image:''};$('#modal').innerHTML=`<div class="overlay"><div class="inner"><div class="heading"><h1>アカウント${i<0?'追加':'編集'}</h1><button type="button" class="icon" onclick="manageAccounts()">✕</button></div><label class="field">表示名<input id="an" value="${e(a.name)}"></label><label class="field">ラベル<select id="ar"><option ${a.role==='ARTIST'?'selected':''}>ARTIST</option><option ${a.role==='STAFF'?'selected':''}>STAFF</option></select></label><label class="field">プロフィール写真<input type="file" id="ai" accept="image/*"></label>${a.image?`<img class="thumb" src="${a.image}">`:''}<div class="actions"><button class="button" onclick="saveAccount(${i})">保存</button><button class="button secondary" onclick="manageAccounts()">キャンセル</button></div></div></div>`}
-async function saveAccount(i){let name=$('#an').value.trim();if(!name)return alert('表示名を入力してください');let a=accounts(),prev=a[i],f=$('#ai').files[0],image=f?await readFile(f):(prev?.image||'');let obj={name,role:$('#ar').value,image};if(i<0)a.push(obj);else a[i]=obj;localStorage.setItem('fc_accounts',JSON.stringify(a));manageAccounts()}
+function editAccount(i){
+ const a=accounts()[i]||{name:'',role:'ARTIST',image:''};
+ $('#modal').innerHTML=`<div class="overlay account-editor-overlay"><div class="inner"><div class="heading"><h1>アカウント${i<0?'追加':'編集'}</h1><button type="button" class="icon" onclick="manageAccounts()">✕</button></div><form id="accountEditorForm" onsubmit="saveAccount(event,${i})"><label class="field">表示名<input id="an" required maxlength="120" value="${e(a.name)}"></label><label class="field">ラベル<select id="ar"><option ${a.role==='ARTIST'?'selected':''}>ARTIST</option><option ${a.role==='STAFF'?'selected':''}>STAFF</option></select></label><label class="field">プロフィール写真<input type="file" id="ai" accept="image/*"></label>${a.image?`<img class="thumb" src="${a.image}">`:''}<div class="actions account-editor-actions"><button class="button" type="submit" id="accountSaveButton">保存</button><button class="button secondary" type="button" onclick="manageAccounts()">キャンセル</button></div><p class="muted" id="accountSaveStatus" role="status" aria-live="polite"></p></form></div></div>`;
+}
+// Keep avatar photos small: iOS full-resolution pictures quickly exhaust localStorage.
+function accountPhotoData(file){return new Promise((resolve,reject)=>{
+ const url=URL.createObjectURL(file),img=new Image();
+ img.onload=()=>{try{
+  const size=480,scale=Math.min(1,size/Math.max(img.naturalWidth,img.naturalHeight));
+  const canvas=document.createElement('canvas');canvas.width=Math.max(1,Math.round(img.naturalWidth*scale));canvas.height=Math.max(1,Math.round(img.naturalHeight*scale));
+  const ctx=canvas.getContext('2d');ctx.drawImage(img,0,0,canvas.width,canvas.height);
+  const result=canvas.toDataURL('image/jpeg',0.78);URL.revokeObjectURL(url);resolve(result);
+ }catch(err){URL.revokeObjectURL(url);reject(err)}};
+ img.onerror=()=>{URL.revokeObjectURL(url);reject(new Error('画像を読み込めませんでした'))};img.src=url;
+})}
+async function saveAccount(event,i){
+ if(event?.preventDefault)event.preventDefault();
+ // Backward compatible with legacy saveAccount(index) calls.
+ if(typeof event==='number'){i=event;event=null}
+ const name=$('#an')?.value.trim(),button=$('#accountSaveButton'),status=$('#accountSaveStatus');
+ if(!name){alert('表示名を入力してください');$('#an')?.focus();return}
+ if(button?.disabled)return;
+ if(button){button.disabled=true;button.textContent='保存中…'}
+ if(status)status.textContent='保存しています…';
+ try{
+  const list=accounts(),previous=list[i],file=$('#ai')?.files?.[0];
+  const photo=file?await accountPhotoData(file):(previous?.image||'');
+  const obj={name,role:$('#ar').value,image:photo};
+  if(i<0)list.push(obj);else list[i]=obj;
+  localStorage.setItem('fc_accounts',JSON.stringify(list));
+  manageAccounts();
+ }catch(err){
+  const quota=err?.name==='QuotaExceededError'||err?.code===22;
+  const message=quota?'保存容量が不足しています。写真を変更せずに保存するか、不要な画像を整理してください。':'保存できませんでした: '+(err?.message||err);
+  if(status)status.textContent=message;
+  alert(message);
+ }finally{if(button?.isConnected){button.disabled=false;button.textContent='保存'}}
+}
 function deleteAccount(i){if(!confirm('アカウントを削除しますか？既存の投稿は消えません。'))return;let a=accounts();a.splice(i,1);localStorage.setItem('fc_accounts',JSON.stringify(a));manageAccounts()}
 function avatar(name){let a=accounts().find(x=>x.name===name);return a?.image?`<img class="avatar" src="${a.image}">`:`<span class="avatar avatar-fallback">${e((name||'?').slice(0,1))}</span>`}
 function role(name){let a=accounts().find(x=>x.name===name);return a&&['ARTIST','STAFF'].includes(a.role)?a.role:''}
