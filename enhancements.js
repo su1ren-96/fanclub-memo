@@ -336,7 +336,10 @@ window.addEventListener('scroll',()=>{
 },{passive:true});
 let touchStart=null;
 const standalone=window.matchMedia?.('(display-mode: standalone)').matches||navigator.standalone===true;
-if(standalone){
+// iOS already performs a native edge-swipe browser-history back.
+// A second JS history.back() on touchend previously skipped the list and landed on HOME.
+const iosNativeSwipe=/iPad|iPhone|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+if(standalone&&!iosNativeSwipe){
  document.addEventListener('touchstart',ev=>{
   touchStart=null;if(ev.touches.length!==1)return;
   const t=ev.touches[0];

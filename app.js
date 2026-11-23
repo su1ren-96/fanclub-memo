@@ -1,27 +1,36 @@
 const TYPES=[['INFORMATION','ℹ️'],['FEED','🪄'],['MESSAGE','💭'],['GALLERY','📷'],['MOVIE','🎥'],['MUSIC','🎧'],['WARDROBE','👗'],['ARCHIVE','🗂️'],['SPECIAL','💌']];let db,data=[],page='HOME',selected=null,editing=null,category='すべて',order='new',search='',view=null;const $=s=>document.querySelector(s),e=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])),today=()=>{let d=new Date;return new Date(d-d.getTimezoneOffset()*60000).toISOString().slice(0,16)},day=s=>s?new Date(s).toLocaleDateString('ja-JP'):'',uuid=()=>crypto.randomUUID?.()||String(Date.now()+Math.random());
 function os(mode='readonly'){return db.transaction('items',mode).objectStore('items')}function all(){return new Promise((ok,no)=>{let r=os().getAll();r.onsuccess=()=>ok(r.result);r.onerror=()=>no(r.error)})}function put(o){return new Promise((ok,no)=>{let r=os('readwrite').put(o);r.onsuccess=ok;r.onerror=()=>no(r.error)})}function erase(id){return new Promise((ok,no)=>{let r=os('readwrite').delete(id);r.onsuccess=ok;r.onerror=()=>no(r.error)})}async function update(){data=await all();render()}function sort(a){return [...a].sort((x,y)=>(order==='new'?-1:1)*(new Date(x.when||0)-new Date(y.when||0)))}function go(p){if(p==='THREAD')p='FEED';page=p;selected=null;category='すべて';drawer(false);dismissOverlay();render();scrollTo(0,0)}function detail(id){selected=id;dismissOverlay();render();scrollTo(0,0)}function back(){selected=null;render();scrollTo(0,0)}function dismissOverlay(){$('#modal').innerHTML=''}function drawer(on){$('#menu').innerHTML=on?`<div class="shade" onclick="drawer(false)"></div><aside class="drawer"><button onclick="drawer(false)">✕ 閉じる</button>${TYPES.map(([t,i])=>`<button onclick="go('${t}')">${i} ${t}</button>`).join('')}</aside>`:''}function head(t,action=''){return `<div class="heading"><h1>${e(t)}</h1>${action}</div>`}function pic(o,cls='thumb',i=0){return o.images?.[i]?`<img class="${cls}" src="${o.images[i]}" alt="">`:`<div class="${cls}" style="display:grid;place-items:center;color:#a99bb2">✧</div>`}function visible(){const filtered=data.filter(x=>x.type===page&&(category==='すべて'||x.category===category));return page==='WARDROBE'?wardrobeSortRecords(filtered):sort(filtered)}const INFO_CATEGORIES=['NOTICE','MEDIA','RELEASE','LIVE / EVENT','OTHER'];function filterbar(){if(page==='WARDROBE')return wardrobeFilterbar();let cats=page==='INFORMATION'?INFO_CATEGORIES:[...new Set(data.filter(x=>x.type===page).map(x=>x.category).filter(Boolean))];return `<div class="row" style="margin-bottom:13px"><select class="search" onchange="category=this.value;render()"><option>すべて</option>${cats.map(c=>`<option ${category===c?'selected':''}>${e(c)}</option>`).join('')}</select><select class="search" onchange="order=this.value;render()"><option value="new" ${order==='new'?'selected':''}>新しい順</option><option value="old" ${order==='old'?'selected':''}>古い順</option></select></div>`}
 
-function accounts(){try{return JSON.parse(localStorage.getItem('fc_accounts')||'[]')}catch{return []}}
+// Account photos live in IndexedDB, not the much smaller localStorage quota.
+const accountPhotoUrls=new Map();
+function accountRecords(){try{return JSON.parse(localStorage.getItem('fc_accounts')||'[]')}catch{return []}}
+function accounts(){return accountRecords().map(a=>({...a,image:accountPhotoUrls.get(a.name)||a.image||''}))}
+function accountPhotoDb(){return new Promise((resolve,reject)=>{
+ const req=indexedDB.open('FanclubMemoAccountPhotos',1);
+ req.onupgradeneeded=()=>{if(!req.result.objectStoreNames.contains('photos'))req.result.createObjectStore('photos')};
+ req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error||new Error('写真の保存領域を開けませんでした'));
+})}
+async function accountPhotoPut(name,blob){const db=await accountPhotoDb();try{await new Promise((resolve,reject)=>{const tx=db.transaction('photos','readwrite');tx.objectStore('photos').put(blob,name);tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error||new Error('写真を保存できませんでした'));tx.onabort=()=>reject(tx.error||new Error('写真の保存が中断されました'))})}finally{db.close()}}
+async function preloadAccountPhotos(){try{const db=await accountPhotoDb();const names=accountRecords().map(a=>a.name);await Promise.all(names.map(name=>new Promise(resolve=>{const tx=db.transaction('photos','readonly');const req=tx.objectStore('photos').get(name);req.onsuccess=()=>{if(req.result){const old=accountPhotoUrls.get(name);if(old)URL.revokeObjectURL(old);accountPhotoUrls.set(name,URL.createObjectURL(req.result))}resolve()};req.onerror=()=>resolve()})));db.close()}catch(err){console.warn('Account photos:',err)}}
 function accountOptions(selected='',type=''){let names=type==='FEED'?accounts().filter(a=>['ARTIST','STAFF'].includes(a.role)).map(a=>a.name):[...accounts().map(a=>a.name),...data.map(o=>o.artist).filter(Boolean)];names=[...new Set(names)];if(selected&&!names.includes(selected))names.unshift(selected);return `<option value="">選択してください</option>${names.map(n=>`<option value="${e(n)}" ${n===selected?'selected':''}>${e(n)}${type==='FEED'&&role(n)?'（'+role(n)+'）':''}</option>`).join('')}`}
 function manageAccounts(){let names=accounts();$('#modal').innerHTML=`<div class="overlay"><div class="inner"><div class="heading"><h1>投稿者・送信者の管理</h1><button type="button" class="icon" onclick="dismissOverlay()">✕</button></div><p class="muted">FEED・MESSAGEで共通のアカウントを使用します。</p>${names.map((a,i)=>`<div class="card row"><div class="grow"><strong>${e(a.name)}</strong><div class="meta">${e(a.role||'ARTIST')}</div></div><button class="button secondary" onclick="editAccount(${i})">編集</button><button class="button danger" onclick="deleteAccount(${i})">削除</button></div>`).join('')}<button class="button" onclick="editAccount(-1)">＋ アカウント追加</button><button class="button secondary" onclick="dismissOverlay()">戻る</button></div></div>`}
 function editAccount(i){
  const a=accounts()[i]||{name:'',role:'ARTIST',image:''};
  $('#modal').innerHTML=`<div class="overlay account-editor-overlay"><div class="inner"><div class="heading"><h1>アカウント${i<0?'追加':'編集'}</h1><button type="button" class="icon" onclick="manageAccounts()">✕</button></div><form id="accountEditorForm" onsubmit="saveAccount(event,${i})"><label class="field">表示名<input id="an" required maxlength="120" value="${e(a.name)}"></label><label class="field">ラベル<select id="ar"><option ${a.role==='ARTIST'?'selected':''}>ARTIST</option><option ${a.role==='STAFF'?'selected':''}>STAFF</option></select></label><label class="field">プロフィール写真<input type="file" id="ai" accept="image/*"></label>${a.image?`<img class="thumb" src="${a.image}">`:''}<div class="actions account-editor-actions"><button class="button" type="submit" id="accountSaveButton">保存</button><button class="button secondary" type="button" onclick="manageAccounts()">キャンセル</button></div><p class="muted" id="accountSaveStatus" role="status" aria-live="polite"></p></form></div></div>`;
 }
-// Keep avatar photos small: iOS full-resolution pictures quickly exhaust localStorage.
-function accountPhotoData(file){return new Promise((resolve,reject)=>{
+// Convert large iPhone photos to compact JPEG blobs; never store the base64 in localStorage.
+function accountPhotoBlob(file){return new Promise((resolve,reject)=>{
  const url=URL.createObjectURL(file),img=new Image();
  img.onload=()=>{try{
-  const size=480,scale=Math.min(1,size/Math.max(img.naturalWidth,img.naturalHeight));
+  const size=360,scale=Math.min(1,size/Math.max(img.naturalWidth,img.naturalHeight));
   const canvas=document.createElement('canvas');canvas.width=Math.max(1,Math.round(img.naturalWidth*scale));canvas.height=Math.max(1,Math.round(img.naturalHeight*scale));
-  const ctx=canvas.getContext('2d');ctx.drawImage(img,0,0,canvas.width,canvas.height);
-  const result=canvas.toDataURL('image/jpeg',0.78);URL.revokeObjectURL(url);resolve(result);
+  canvas.getContext('2d').drawImage(img,0,0,canvas.width,canvas.height);
+  canvas.toBlob(blob=>{URL.revokeObjectURL(url);blob?resolve(blob):reject(new Error('画像を変換できませんでした'))},'image/jpeg',0.68);
  }catch(err){URL.revokeObjectURL(url);reject(err)}};
- img.onerror=()=>{URL.revokeObjectURL(url);reject(new Error('画像を読み込めませんでした'))};img.src=url;
+ img.onerror=()=>{URL.revokeObjectURL(url);reject(new Error('選択した画像を読み込めませんでした'))};img.src=url;
 })}
 async function saveAccount(event,i){
  if(event?.preventDefault)event.preventDefault();
- // Backward compatible with legacy saveAccount(index) calls.
  if(typeof event==='number'){i=event;event=null}
  const name=$('#an')?.value.trim(),button=$('#accountSaveButton'),status=$('#accountSaveStatus');
  if(!name){alert('表示名を入力してください');$('#an')?.focus();return}
@@ -29,17 +38,20 @@ async function saveAccount(event,i){
  if(button){button.disabled=true;button.textContent='保存中…'}
  if(status)status.textContent='保存しています…';
  try{
-  const list=accounts(),previous=list[i],file=$('#ai')?.files?.[0];
-  const photo=file?await accountPhotoData(file):(previous?.image||'');
-  const obj={name,role:$('#ar').value,image:photo};
+  const list=accountRecords(),previous=list[i],file=$('#ai')?.files?.[0];
+  let newBlob=null;
+  if(file)newBlob=await accountPhotoBlob(file);
+  // Keep existing legacy photos until explicitly replaced.
+  const obj={name,role:$('#ar').value,image:newBlob?'':(previous?.image||'')};
+  if(newBlob)await accountPhotoPut(name,newBlob);
   if(i<0)list.push(obj);else list[i]=obj;
   localStorage.setItem('fc_accounts',JSON.stringify(list));
+  if(newBlob){const old=accountPhotoUrls.get(name);if(old)URL.revokeObjectURL(old);accountPhotoUrls.set(name,URL.createObjectURL(newBlob))}
   manageAccounts();
  }catch(err){
   const quota=err?.name==='QuotaExceededError'||err?.code===22;
-  const message=quota?'保存容量が不足しています。写真を変更せずに保存するか、不要な画像を整理してください。':'保存できませんでした: '+(err?.message||err);
-  if(status)status.textContent=message;
-  alert(message);
+  const message=quota?'写真の保存容量が不足しています。端末の空き容量を確認してください。':'保存できませんでした: '+(err?.message||err);
+  if(status)status.textContent=message;alert(message);
  }finally{if(button?.isConnected){button.disabled=false;button.textContent='保存'}}
 }
 function deleteAccount(i){if(!confirm('アカウントを削除しますか？既存の投稿は消えません。'))return;let a=accounts();a.splice(i,1);localStorage.setItem('fc_accounts',JSON.stringify(a));manageAccounts()}
@@ -178,4 +190,4 @@ function wardrobeRemoveImage(i){if(!confirm('このページを編集内容か�
 function wardrobeCancel(){const form=$('#wardrobeForm');if(form&&(!wardrobeEditing||form.querySelector('[name=title]').value!==(data.find(x=>x.id===wardrobeEditing)?.title||'')||wardrobeDraftImages.length!==(data.find(x=>x.id===wardrobeEditing)?.images||[]).length)&&!confirm('保存していない変更を破棄しますか？'))return;dismissOverlay()}
 async function wardrobeSave(ev){ev.preventDefault();document.activeElement?.blur?.();const b=$('#wardrobeSaveButton');if(b)b.disabled=true;const f=new FormData(ev.target);const isNew=!wardrobeEditing;const o=isNew?{id:uuid(),type:'WARDROBE',images:[],fav:false,replies:[],when:today()}:{...data.find(x=>x.id===wardrobeEditing)};o.title=String(f.get('title')||'').trim();o.body=String(f.get('body')||'');o.category=String(f.get('category')||'');o.images=[...wardrobeDraftImages];if(!o.title){alert('タイトルを入力してください');if(b)b.disabled=false;return}try{await put(o);if(wardrobeSortMode()==='custom'&&isNew){const ids=wardrobeGetIds();if(!ids.includes(o.id)){ids.push(o.id);localStorage.setItem(WARDROBE_ORDER_KEY,JSON.stringify(ids))}}dismissOverlay();selected=o.id;await update();scrollTo(0,0)}catch(err){alert('保存できませんでした。空き容量を確認してください: '+err.message);if(b)b.disabled=false}}
 
-let req=indexedDB.open('FanclubMemoDB',1);req.onupgradeneeded=()=>{let d=req.result;if(!d.objectStoreNames.contains('items'))d.createObjectStore('items',{keyPath:'id'})};req.onsuccess=async()=>{db=req.result;await update()};req.onerror=()=>{$('#app').textContent='保存領域を開けませんでした。ブラウザ設定を確認してください。'};
+let req=indexedDB.open('FanclubMemoDB',1);req.onupgradeneeded=()=>{let d=req.result;if(!d.objectStoreNames.contains('items'))d.createObjectStore('items',{keyPath:'id'})};req.onsuccess=async()=>{db=req.result;await preloadAccountPhotos();await update()};req.onerror=()=>{$('#app').textContent='保存領域を開けませんでした。ブラウザ設定を確認してください。'};
