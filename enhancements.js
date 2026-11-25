@@ -255,6 +255,7 @@ save=async function(ev){
 // Reliable navigation: each history entry keeps its parent screen and scroll position.
 const HISTORY_FLAG='__fcMemoNavigationV2';
 let navigationRestoring=false, navigationDepth=0, pendingBack=null;
+let channelHomeScroll=0,lastChannelTap=null;
 const screenId=s=>[s.page||'',s.selected||'',s.channelTab||'',s.channelSelected||''].join('\u001f');
 function snapshot(){return {page,selected,category,order,search,channelTab:typeof channelTab==='string'?channelTab:'home',channelSelected:typeof channelSelected==='string'?channelSelected:null,scrollY:Math.max(0,window.scrollY||0)}}
 function currentEntry(){return history.state?.[HISTORY_FLAG]?history.state:null}
@@ -272,7 +273,9 @@ function recordTransition(before){
 }
 function navigate(fn){
  if(navigationRestoring)return fn();
- persistScroll();const before=snapshot();const result=fn();recordTransition(before);return result;
+ persistScroll();const before=snapshot();
+ if(before.page==='CHANNEL'&&before.channelTab==='home'&&!before.channelSelected)channelHomeScroll=before.scrollY;
+ const result=fn();recordTransition(before);return result;
 }
 let restoringId=0;
 function restoreScreen(s){
@@ -296,20 +299,46 @@ searchPage=function(){return navigate(()=>oldSearchPage())};
 if(typeof channelOpen==='function'){const fn=channelOpen;channelOpen=function(id){return navigate(()=>fn(id))}}
 if(typeof chNavTab==='function'){const fn=chNavTab;chNavTab=function(tab){return navigate(()=>fn(tab))}}
 const originalBack=back;
-function navigationBack(){
+function navigationBack(scrollOverride=null){
  const entry=currentEntry();if(!entry||entry.depth<1){originalBack();return}
  persistScroll();
  const parent=entry.parent;
  if(parent){
   // Restore the previous list immediately. This avoids the blank Safari frame
   // that can occur while a browser-history back operation is pending.
-  pendingBack={depth:entry.depth-1,id:screenId(parent)};
-  restoreScreen(parent);
+  const target=scrollOverride===null?parent:{...parent,scrollY:scrollOverride};
+  pendingBack={depth:entry.depth-1,id:screenId(parent),scrollOverride};
+  restoreScreen(target);
  }
  history.back();
 }
 back=navigationBack;
-if(typeof chBack==='function')chBack=navigationBack;
+// CHANNEL's own back button must not restore a stale detail or another app tab.
+function channelReturnHome(top=false){
+ if(page!=='CHANNEL'){go('CHANNEL')}
+ const entry=currentEntry(), parent=entry?.parent;
+ const y=top?0:channelHomeScroll;
+ if((channelSelected||channelTab!=='home')&&parent?.page==='CHANNEL'&&parent.channelTab==='home'&&!parent.channelSelected&&entry.depth>0){
+  // Use the normal history path when the actual parent is CHANNEL home.
+  navigationBack(top?0:null);
+  return;
+ }
+ const target={...snapshot(),page:'CHANNEL',selected:null,channelSelected:null,channelTab:'home',scrollY:y};
+ restoreScreen(target);
+ // Replace this detail rather than adding a second history entry for a back action.
+ history.replaceState({[HISTORY_FLAG]:true,depth:entry?.depth??0,snapshot:target,parent:entry?.parent??null},'');
+}
+if(typeof chBack==='function')chBack=function(){if(page==='CHANNEL')return channelReturnHome();return navigationBack()};
+window.channelTabPress=function(){
+ const now=performance.now();
+ if(lastChannelTap!==null&&now-lastChannelTap<=350&&page==='CHANNEL'){
+  lastChannelTap=null;return channelReturnHome(true);
+ }
+ lastChannelTap=now;
+ if(page!=='CHANNEL')go('CHANNEL');
+};
+// A tap on another tab breaks the double-tap sequence.
+document.addEventListener('click',ev=>{if(!ev.target.closest('#nav button[onclick="channelTabPress()"]'))lastChannelTap=null},{capture:true});
 try{history.scrollRestoration='manual'}catch(_){}
 // Old cached v1 entries are not reused as v2 entries (prevents stale HOME returns).
 history.replaceState({[HISTORY_FLAG]:true,depth:0,snapshot:snapshot(),parent:null},'');
@@ -322,6 +351,7 @@ window.addEventListener('popstate',ev=>{
  if(!entry){pendingBack=null;return}
  navigationDepth=entry.depth;
  if(pendingBack&&pendingBack.depth===entry.depth&&pendingBack.id===screenId(entry.snapshot)){
+  if(pendingBack.scrollOverride!==null)history.replaceState({...entry,snapshot:{...entry.snapshot,scrollY:pendingBack.scrollOverride}},'');
   pendingBack=null;
   // Already rendered the correct previous screen on touch release.
   return;
@@ -343,7 +373,7 @@ if(standalone&&!iosNativeSwipe){
  document.addEventListener('touchstart',ev=>{
   touchStart=null;if(ev.touches.length!==1)return;
   const t=ev.touches[0];
-  if(t.clientX>28||ev.target.closest('.viewer,.wardrobe-pages,.photos,.gallery-masonry,.overlay,.reaction-picker-shade,.ch-shorts,.home-thread-scroller,.home-movie-scroller,input,textarea,select'))return;
+  if(t.clientX>28||ev.target.closest('.archive-preview-overlay,.viewer,.wardrobe-pages,.photos,.gallery-masonry,.overlay,.reaction-picker-shade,.ch-shorts,.home-thread-scroller,.home-movie-scroller,input,textarea,select'))return;
   touchStart={x:t.clientX,y:t.clientY};
  },{passive:true});
  document.addEventListener('touchend',ev=>{

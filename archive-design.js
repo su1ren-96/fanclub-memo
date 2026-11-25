@@ -12,6 +12,24 @@ function metaFor(folder,index){
   year:typeof item?.year==='string'?item.year:(typeof item?.year==='number'?String(item.year):'')
  };
 }
+// Presentation-only sort: keep original image and metadata indices together.
+const yearOrderKey='fc_archive_image_year_order';
+let imageYearOrder='new';
+try{if(localStorage.getItem(yearOrderKey)==='old')imageYearOrder='old'}catch(_){}
+function sortedImageIndices(o){
+ const year=i=>{const y=metaFor(o,i).year.trim();return /^\d{4}$/.test(y)?Number(y):null};
+ return (o.images||[]).map((_,i)=>i).sort((a,b)=>{
+  const x=year(a),y=year(b);
+  if(x===null||y===null)return x===y?a-b:x===null?1:-1;
+  return (imageYearOrder==='new'?y-x:x-y)||a-b;
+ });
+}
+window.archiveSetYearOrder=function(value){
+ if(value!=='new'&&value!=='old')return;
+ imageYearOrder=value;
+ try{localStorage.setItem(yearOrderKey,value)}catch(_){}
+ const y=window.scrollY;render();window.scrollTo(0,y);
+};
 // Give every folder a stable, distinct pastel shade.  Golden-angle distribution
 // avoids repeating a three-color palette.  Newly edited/created folders store
 // their hue with their archive record; legacy folders derive it deterministically
@@ -49,11 +67,12 @@ filterbar=function(){
 const oldDetail=showDetail;
 showDetail=function(o){
  if(o?.type!=='ARCHIVE')return oldDetail(o);
- const files=(o.images||[]).map((src,i)=>{
+ const files=sortedImageIndices(o).map(i=>{
+  const src=o.images[i];
   const m=metaFor(o,i),name=m.name||`画像 ${i+1}`;
   return `<div class="archive-file-item" role="button" tabindex="0" onclick="archivePreview('${safe(o.id)}',${i})" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();archivePreview('${safe(o.id)}',${i})}"><img src="${src}" alt="${safe(name)}" loading="lazy"><div class="archive-file-name">${safe(name)}</div>${m.year?`<div class="archive-file-year">${safe(m.year)}</div>`:''}</div>`;
  }).join('');
- return `<button class="button secondary" type="button" onclick="back()">‹ 戻る</button><div class="archive-open-window"><div class="archive-open-heading"><span class="archive-mini-folder">▱</span><h1>${safe(o.title||'無題のフォルダ')}</h1></div><div class="archive-file-count">${(o.images||[]).length} items</div>${files?`<div class="archive-files-grid">${files}</div>`:'<div class="archive-no-files">画像はまだ登録されていません</div>'}${o.body?`<div class="archive-folder-description">${safe(o.body)}</div>`:''}</div><div class="actions"><button class="button secondary" onclick="favorite('${safe(o.id)}')">${o.fav?'♥ 登録済み':'♡ お気に入り'}</button><button class="button secondary" onclick="editor('${safe(o.id)}')">編集</button><button class="button danger" onclick="removeItem('${safe(o.id)}')">削除</button></div>`;
+ return `<button class="button secondary" type="button" onclick="back()">‹ 戻る</button><div class="archive-open-window"><div class="archive-open-heading"><span class="archive-mini-folder">▱</span><h1>${safe(o.title||'無題のフォルダ')}</h1></div><div class="archive-file-toolbar"><div class="archive-file-count">${(o.images||[]).length} items</div><select class="archive-year-sort" aria-label="画像の年順" onchange="archiveSetYearOrder(this.value)"><option value="new" ${imageYearOrder==='new'?'selected':''}>新しい年順</option><option value="old" ${imageYearOrder==='old'?'selected':''}>古い年順</option></select></div>${files?`<div class="archive-files-grid">${files}</div>`:'<div class="archive-no-files">画像はまだ登録されていません</div>'}${o.body?`<div class="archive-folder-description">${safe(o.body)}</div>`:''}</div><div class="actions"><button class="button secondary" onclick="favorite('${safe(o.id)}')">${o.fav?'♥ 登録済み':'♡ お気に入り'}</button><button class="button secondary" onclick="editor('${safe(o.id)}')">編集</button><button class="button danger" onclick="removeItem('${safe(o.id)}')">削除</button></div>`;
 };
 let editId=null,draft=[];
 function drawRows(){
@@ -99,10 +118,10 @@ editor=function(id){const o=id?data.find(x=>x.id===id):null;if((o?.type||page)==
 let preview=null,gesture=null;
 window.archivePreview=function(id,i){const o=data.find(x=>x.id===id);if(!o?.images?.[i])return;preview={id,i};drawPreview()};
 window.archivePreviewClose=function(){preview=null;dismissOverlay()};
-window.archivePreviewNext=function(step){if(!preview)return;const o=data.find(x=>x.id===preview.id);if(!o?.images?.length)return;preview.i=(preview.i+step+o.images.length)%o.images.length;drawPreview()};
+window.archivePreviewNext=function(step){if(!preview)return;const o=data.find(x=>x.id===preview.id);if(!o?.images?.length)return;const indices=sortedImageIndices(o),pos=indices.indexOf(preview.i);preview.i=indices[(pos+step+indices.length)%indices.length];drawPreview()};
 function drawPreview(){
  if(!preview)return;const o=data.find(x=>x.id===preview.id);if(!o)return;const i=preview.i,m=metaFor(o,i);
- $('#modal').innerHTML=`<div class="archive-preview-overlay" role="presentation" onclick="if(event.target===this)archivePreviewClose()"><div class="archive-preview-dialog" role="dialog" aria-modal="true" aria-label="画像プレビュー"><div class="archive-preview-top"><div class="archive-preview-meta"><strong>${safe(m.name||`画像 ${i+1}`)}</strong>${m.year?`<span>${safe(m.year)}</span>`:''}</div><button type="button" class="archive-preview-close" aria-label="閉じる" onclick="archivePreviewClose()">×</button></div><div class="archive-preview-media" ontouchstart="archivePreviewTouchStart(event)" ontouchmove="archivePreviewTouchMove(event)" ontouchend="archivePreviewTouchEnd(event)" ontouchcancel="archivePreviewTouchCancel()"><img src="${o.images[i]}" alt="${safe(m.name||'画像')}" draggable="false"></div><div class="archive-preview-controls"><button type="button" onclick="archivePreviewNext(-1)" aria-label="前の画像" ${o.images.length===1?'disabled':''}>‹</button><span>${i+1} / ${o.images.length}</span><button type="button" onclick="archivePreviewNext(1)" aria-label="次の画像" ${o.images.length===1?'disabled':''}>›</button></div></div></div>`;
+ $('#modal').innerHTML=`<div class="archive-preview-overlay" role="presentation" onclick="if(event.target===this)archivePreviewClose()"><div class="archive-preview-dialog" role="dialog" aria-modal="true" aria-label="画像プレビュー"><div class="archive-preview-top"><div class="archive-preview-meta"><strong>${safe(m.name||`画像 ${i+1}`)}</strong>${m.year?`<span>${safe(m.year)}</span>`:''}</div><button type="button" class="archive-preview-close" aria-label="閉じる" onclick="archivePreviewClose()">×</button></div><div class="archive-preview-media" ontouchstart="archivePreviewTouchStart(event)" ontouchmove="archivePreviewTouchMove(event)" ontouchend="archivePreviewTouchEnd(event)" ontouchcancel="archivePreviewTouchCancel()"><img src="${o.images[i]}" alt="${safe(m.name||'画像')}" draggable="false"></div><div class="archive-preview-controls"><button type="button" onclick="archivePreviewNext(-1)" aria-label="前の画像" ${o.images.length===1?'disabled':''}>‹</button><span>${sortedImageIndices(o).indexOf(i)+1} / ${o.images.length}</span><button type="button" onclick="archivePreviewNext(1)" aria-label="次の画像" ${o.images.length===1?'disabled':''}>›</button></div></div></div>`;
 }
 window.archivePreviewTouchStart=function(ev){if(ev.touches.length!==1)return;gesture={x:ev.touches[0].clientX,y:ev.touches[0].clientY}};
 window.archivePreviewTouchMove=function(ev){if(!gesture||ev.touches.length!==1)return;const dx=ev.touches[0].clientX-gesture.x,dy=ev.touches[0].clientY-gesture.y;if(Math.abs(dx)>18&&Math.abs(dx)>Math.abs(dy)*1.3&&ev.cancelable)ev.preventDefault()};

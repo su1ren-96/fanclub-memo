@@ -4,7 +4,7 @@ function renderFiveTabBar(){
  const nav = document.getElementById('nav');
  if(!nav)return;
  const tabs=[['HOME','⌂'],['FAVORITES','♡'],['CHANNEL','▶'],['MY PAGE','♙'],['SETTINGS','⚙']];
- nav.innerHTML=tabs.map(([p,i])=>`<button class="${page===p?'active':''}" onclick="go('${p}')"><span>${i}</span>${p}</button>`).join('');
+ nav.innerHTML=tabs.map(([p,i])=>`<button class="${page===p?'active':''}" onclick="${p==='CHANNEL'?'channelTabPress()':`go('${p}')`}"><span>${i}</span>${p}</button>`).join('');
 }
 render = function(){
  document.body.classList.toggle('channel-mode',page==='CHANNEL');
@@ -163,7 +163,7 @@ function channelProfile(){
 }
 function renderChannel(){
  let app=$('#app'),nav=$('#nav');
- nav.innerHTML=[['HOME','⌂'],['FAVORITES','♡'],['CHANNEL','▶'],['MY PAGE','♙'],['SETTINGS','⚙']].map(([p,i])=>`<button class="${page===p?'active':''}" onclick="go('${p}')"><span>${i}</span>${p}</button>`).join('');
+ nav.innerHTML=[['HOME','⌂'],['FAVORITES','♡'],['CHANNEL','▶'],['MY PAGE','♙'],['SETTINGS','⚙']].map(([p,i])=>`<button class="${page===p?'active':''}" onclick="${p==='CHANNEL'?'channelTabPress()':`go('${p}')`}"><span>${i}</span>${p}</button>`).join('');
  if(!channelDB){app.innerHTML='<div class="ch-empty">CHANNELを読み込んでいます…</div>';return}
  if(channelSelected){let o=channelEntries.find(x=>x.id===channelSelected);app.innerHTML=o?`<div class="ch-detail"><button class="ch-text-btn" onclick="chBack()">‹ 戻る</button>${o.image?`<img class="ch-detail-image" src="${o.image}" alt="サムネイル">`:'<div class="ch-detail-image ch-blank">▶</div>'}<h1>${e(o.title)}</h1><div class="ch-subline">${e(channelSettings.name)} · ${chViewMeta(o)}${chDate(o.when)} · ${e(chLabel(o.kind))}</div><div class="ch-description">${e(o.description||'')}</div><div class="ch-buttons"><button onclick="channelEntryEditor('${o.id}')">編集</button><button onclick="channelRemove('${o.id}')">削除</button></div></div>`:'<div class="ch-empty">コンテンツが見つかりません。</div>';return}
  let tabs=[['home','ホーム'],['video','動画'],['short','ショート'],['live','ライブ'],['release','リリース']];
