@@ -2,22 +2,43 @@
 (function(){
 'use strict';
 const safe=e;
-// Image labels and optional years are stored alongside the existing images.
+// Image labels and optional dates are stored alongside the existing images.
 // Older ARCHIVE records have no archiveItems: keep their photos readable.
 function metaFor(folder,index){
  const items=Array.isArray(folder?.archiveItems)?folder.archiveItems:[];
  const item=items[index];
  return {
   name:typeof item?.name==='string'?item.name:'',
-  year:typeof item?.year==='string'?item.year:(typeof item?.year==='number'?String(item.year):'')
+  year:String(item?.year??''),
+  month:String(item?.month??''),
+  day:String(item?.day??'')
  };
+}
+function validDateParts(m){
+ const y=String(m.year||'').trim(),mo=String(m.month||'').trim(),d=String(m.day||'').trim();
+ if(!y)return !mo&&!d;
+ if(!/^\d{4}$/.test(y)||Number(y)<1)return false;
+ if(!mo)return !d;
+ if(!/^\d{1,2}$/.test(mo)||Number(mo)<1||Number(mo)>12)return false;
+ if(!d)return true;
+ const n=Number(y),leap=n%4===0&&(n%100!==0||n%400===0);
+ const max=[31,leap?29:28,31,30,31,30,31,31,30,31,30,31][Number(mo)-1];
+ return /^\d{1,2}$/.test(d)&&Number(d)>=1&&Number(d)<=max;
+}
+function dateLabel(m){
+ if(!m.year)return '';
+ return [m.year,m.month?String(m.month).padStart(2,'0'):'',m.month&&m.day?String(m.day).padStart(2,'0'):''].filter(Boolean).join('.');
+}
+function dateKey(m){
+ if(!m.year||!validDateParts(m))return null;
+ return Number(m.year)*10000+Number(m.month||1)*100+Number(m.day||1);
 }
 // Presentation-only sort: keep original image and metadata indices together.
 const yearOrderKey='fc_archive_image_year_order';
 let imageYearOrder='new';
 try{if(localStorage.getItem(yearOrderKey)==='old')imageYearOrder='old'}catch(_){}
 function sortedImageIndices(o){
- const year=i=>{const y=metaFor(o,i).year.trim();return /^\d{4}$/.test(y)?Number(y):null};
+ const year=i=>dateKey(metaFor(o,i));
  return (o.images||[]).map((_,i)=>i).sort((a,b)=>{
   const x=year(a),y=year(b);
   if(x===null||y===null)return x===y?a-b:x===null?1:-1;
@@ -70,44 +91,44 @@ showDetail=function(o){
  const files=sortedImageIndices(o).map(i=>{
   const src=o.images[i];
   const m=metaFor(o,i),name=m.name||`画像 ${i+1}`;
-  return `<div class="archive-file-item" role="button" tabindex="0" onclick="archivePreview('${safe(o.id)}',${i})" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();archivePreview('${safe(o.id)}',${i})}"><img src="${src}" alt="${safe(name)}" loading="lazy"><div class="archive-file-name">${safe(name)}</div>${m.year?`<div class="archive-file-year">${safe(m.year)}</div>`:''}</div>`;
+  return `<div class="archive-file-item" role="button" tabindex="0" onclick="archivePreview('${safe(o.id)}',${i})" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();archivePreview('${safe(o.id)}',${i})}"><img src="${src}" alt="${safe(name)}" loading="lazy"><div class="archive-file-name">${safe(name)}</div>${m.year?`<div class="archive-file-year">${safe(dateLabel(m))}</div>`:''}</div>`;
  }).join('');
- return `<button class="button secondary" type="button" onclick="back()">‹ 戻る</button><div class="archive-open-window"><div class="archive-open-heading"><span class="archive-mini-folder">▱</span><h1>${safe(o.title||'無題のフォルダ')}</h1></div><div class="archive-file-toolbar"><div class="archive-file-count">${(o.images||[]).length} items</div><select class="archive-year-sort" aria-label="画像の年順" onchange="archiveSetYearOrder(this.value)"><option value="new" ${imageYearOrder==='new'?'selected':''}>新しい年順</option><option value="old" ${imageYearOrder==='old'?'selected':''}>古い年順</option></select></div>${files?`<div class="archive-files-grid">${files}</div>`:'<div class="archive-no-files">画像はまだ登録されていません</div>'}${o.body?`<div class="archive-folder-description">${safe(o.body)}</div>`:''}</div><div class="actions"><button class="button secondary" onclick="favorite('${safe(o.id)}')">${o.fav?'♥ 登録済み':'♡ お気に入り'}</button><button class="button secondary" onclick="editor('${safe(o.id)}')">編集</button><button class="button danger" onclick="removeItem('${safe(o.id)}')">削除</button></div>`;
+ return `<button class="button secondary" type="button" onclick="back()">‹ 戻る</button><div class="archive-open-window"><div class="archive-open-heading"><span class="archive-mini-folder">▱</span><h1>${safe(o.title||'無題のフォルダ')}</h1></div><div class="archive-file-toolbar"><div class="archive-file-count">${(o.images||[]).length} items</div><select class="archive-year-sort" aria-label="画像の日付順" onchange="archiveSetYearOrder(this.value)"><option value="new" ${imageYearOrder==='new'?'selected':''}>新しい日付順</option><option value="old" ${imageYearOrder==='old'?'selected':''}>古い日付順</option></select></div>${files?`<div class="archive-files-grid">${files}</div>`:'<div class="archive-no-files">画像はまだ登録されていません</div>'}${o.body?`<div class="archive-folder-description">${safe(o.body)}</div>`:''}</div><div class="actions"><button class="button secondary" onclick="favorite('${safe(o.id)}')">${o.fav?'♥ 登録済み':'♡ お気に入り'}</button><button class="button secondary" onclick="editor('${safe(o.id)}')">編集</button><button class="button danger" onclick="removeItem('${safe(o.id)}')">削除</button></div>`;
 };
 let editId=null,draft=[];
 function drawRows(){
  const target=document.getElementById('archiveImageRows');if(!target)return;
- target.innerHTML=draft.map((item,i)=>`<div class="archive-edit-row"><img src="${item.src}" alt="画像 ${i+1}"><div class="archive-edit-fields"><label class="field">アイテム名<input type="text" class="archive-item-name" data-index="${i}" value="${safe(item.name||'')}" placeholder="画像 ${i+1}" maxlength="120"></label><label class="field">年（任意）<input type="text" class="archive-item-year" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" data-index="${i}" value="${safe(item.year||'')}" placeholder="例：2024"></label></div><button class="button danger archive-remove-image" type="button" onclick="archiveRemoveDraft(${i})">削除</button></div>`).join('')||'<p class="muted">画像はまだありません。</p>';
+ target.innerHTML=draft.map((item,i)=>`<div class="archive-edit-row"><img src="${item.src}" alt="画像 ${i+1}"><div class="archive-edit-fields"><label class="field">アイテム名<input type="text" class="archive-item-name" data-index="${i}" value="${safe(item.name||'')}" placeholder="画像 ${i+1}" maxlength="120"></label><label class="field">年（任意）<input type="text" class="archive-item-year" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" data-index="${i}" value="${safe(item.year||'')}" placeholder="例：2024"></label><div class="archive-date-parts"><label class="field">月（任意）<input type="text" class="archive-item-month" inputmode="numeric" pattern="[0-9]{1,2}" maxlength="2" value="${safe(item.month||'')}" placeholder="1〜12"></label><label class="field">日（任意）<input type="text" class="archive-item-day" inputmode="numeric" pattern="[0-9]{1,2}" maxlength="2" value="${safe(item.day||'')}" placeholder="1〜31"></label></div></div><button class="button danger archive-remove-image" type="button" onclick="archiveRemoveDraft(${i})">削除</button></div>`).join('')||'<p class="muted">画像はまだありません。</p>';
 }
 function syncRows(){
  document.querySelectorAll('.archive-edit-row').forEach(row=>{
   const name=row.querySelector('.archive-item-name'),year=row.querySelector('.archive-item-year');if(!name)return;
-  const i=Number(name.dataset.index);if(draft[i]){draft[i].name=name.value;draft[i].year=year.value}
+  const i=Number(name.dataset.index);if(draft[i]){draft[i].name=name.value;draft[i].year=year.value;draft[i].month=row.querySelector('.archive-item-month').value;draft[i].day=row.querySelector('.archive-item-day').value}
  });
 }
 window.archiveRemoveDraft=function(i){syncRows();draft.splice(i,1);drawRows()};
 window.archiveAddFiles=async function(input){
  syncRows();const files=[...(input.files||[])];input.disabled=true;
- try{for(const file of files){const src=await readFile(file);draft.push({src,name:file.name.replace(/\.[^.]+$/,'').slice(0,120),year:''})}drawRows()}
+ try{for(const file of files){const src=await readFile(file);draft.push({src,name:file.name.replace(/\.[^.]+$/,'').slice(0,120),year:'',month:'',day:''})}drawRows()}
  catch(err){alert('画像を読み込めませんでした: '+(err?.message||err))}
  finally{input.value='';input.disabled=false}
 };
 window.archiveEditor=function(id){
  const o=id?data.find(x=>x.id===id):null;editId=id||null;
- draft=(o?.images||[]).map((src,i)=>({src,name:metaFor(o,i).name||'',year:metaFor(o,i).year||''}));
- $('#modal').innerHTML=`<div class="overlay archive-edit-overlay"><div class="inner"><div class="heading"><h1>${o?'編集':'新規追加'} · ARCHIVE</h1><button type="button" class="icon" onclick="archiveCancelEditor()">✕</button></div><form id="archiveEditForm" onsubmit="archiveSave(event)"><label class="field">フォルダ名<input name="title" required maxlength="200" value="${safe(o?.title||'')}"></label><label class="field">説明文（任意）<textarea name="body">${safe(o?.body||'')}</textarea></label><label class="field">画像を追加（複数選択可）<input id="archiveFiles" type="file" accept="image/*" multiple onchange="archiveAddFiles(this)"></label><p class="muted">各画像に名前と年を設定できます。年は西暦4桁・未入力も可能です。</p><div id="archiveImageRows"></div><div class="actions"><button id="archiveSaveButton" class="button" type="submit">保存する</button><button class="button secondary" type="button" onclick="archiveCancelEditor()">キャンセル</button></div></form></div></div>`;
+ draft=(o?.images||[]).map((src,i)=>({src,name:metaFor(o,i).name||'',year:metaFor(o,i).year||'',month:metaFor(o,i).month||'',day:metaFor(o,i).day||''}));
+ $('#modal').innerHTML=`<div class="overlay archive-edit-overlay"><div class="inner"><div class="heading"><h1>${o?'編集':'新規追加'} · ARCHIVE</h1><button type="button" class="icon" onclick="archiveCancelEditor()">✕</button></div><form id="archiveEditForm" onsubmit="archiveSave(event)"><label class="field">フォルダ名<input name="title" required maxlength="200" value="${safe(o?.title||'')}"></label><label class="field">説明文（任意）<textarea name="body">${safe(o?.body||'')}</textarea></label><label class="field">画像を追加（複数選択可）<input id="archiveFiles" type="file" accept="image/*" multiple onchange="archiveAddFiles(this)"></label><p class="muted">各画像に名前と日付を設定できます。年のみ・年月のみ・年月日・未入力のいずれも可能です。月を入れる場合は年、日を入れる場合は年と月も入力してください。</p><div id="archiveImageRows"></div><div class="actions"><button id="archiveSaveButton" class="button" type="submit">保存する</button><button class="button secondary" type="button" onclick="archiveCancelEditor()">キャンセル</button></div></form></div></div>`;
  drawRows();
 };
 window.archiveCancelEditor=function(){if(confirm('編集を終了しますか？ 未保存の変更は破棄されます。'))dismissOverlay()};
 window.archiveSave=async function(ev){
  ev.preventDefault();syncRows();const form=ev.currentTarget;if(!form.reportValidity())return;
- const yearInvalid=draft.some(item=>item.year&&!/^\d{4}$/.test(item.year));if(yearInvalid){alert('年は西暦4桁で入力してください。');return}
+ const invalid=draft.findIndex(item=>!validDateParts(item));if(invalid>=0){alert(`画像 ${invalid+1} の日付を確認してください。西暦4桁と実在する月・日を入力してください。`);return}
  const button=document.getElementById('archiveSaveButton');if(button)button.disabled=true;
  const old=editId?data.find(x=>x.id===editId):null;
  const o=old?{...old}:{id:uuid(),type:'ARCHIVE',images:[],replies:[],fav:false,when:today()};
  o.title=form.elements.title.value.trim();o.body=form.elements.body.value;
  o.images=draft.map(item=>item.src);
- o.archiveItems=draft.map(item=>({name:String(item.name||'').trim(),year:String(item.year||'').trim()}));
+ o.archiveItems=draft.map(item=>({name:String(item.name||'').trim(),year:String(item.year||'').trim(),month:String(item.month||'').trim(),day:String(item.day||'').trim()}));
  if(!Number.isFinite(Number(o.archiveFolderHue))||o.archiveFolderHue==null){o.archiveFolderHue=hueFor(o);if(!old){const others=data.filter(x=>x.type==='ARCHIVE').length;o.archiveFolderHue=(335+others*137.50776405)%360;}}
  if(!o.title){alert('フォルダ名を入力してください');if(button)button.disabled=false;return}
  try{await put(o);dismissOverlay();selected=o.id;await update();window.scrollTo(0,0)}
@@ -121,7 +142,7 @@ window.archivePreviewClose=function(){preview=null;dismissOverlay()};
 window.archivePreviewNext=function(step){if(!preview)return;const o=data.find(x=>x.id===preview.id);if(!o?.images?.length)return;const indices=sortedImageIndices(o),pos=indices.indexOf(preview.i);preview.i=indices[(pos+step+indices.length)%indices.length];drawPreview()};
 function drawPreview(){
  if(!preview)return;const o=data.find(x=>x.id===preview.id);if(!o)return;const i=preview.i,m=metaFor(o,i);
- $('#modal').innerHTML=`<div class="archive-preview-overlay" role="presentation" onclick="if(event.target===this)archivePreviewClose()"><div class="archive-preview-dialog" role="dialog" aria-modal="true" aria-label="画像プレビュー"><div class="archive-preview-top"><div class="archive-preview-meta"><strong>${safe(m.name||`画像 ${i+1}`)}</strong>${m.year?`<span>${safe(m.year)}</span>`:''}</div><button type="button" class="archive-preview-close" aria-label="閉じる" onclick="archivePreviewClose()">×</button></div><div class="archive-preview-media" ontouchstart="archivePreviewTouchStart(event)" ontouchmove="archivePreviewTouchMove(event)" ontouchend="archivePreviewTouchEnd(event)" ontouchcancel="archivePreviewTouchCancel()"><img src="${o.images[i]}" alt="${safe(m.name||'画像')}" draggable="false"></div><div class="archive-preview-controls"><button type="button" onclick="archivePreviewNext(-1)" aria-label="前の画像" ${o.images.length===1?'disabled':''}>‹</button><span>${sortedImageIndices(o).indexOf(i)+1} / ${o.images.length}</span><button type="button" onclick="archivePreviewNext(1)" aria-label="次の画像" ${o.images.length===1?'disabled':''}>›</button></div></div></div>`;
+ $('#modal').innerHTML=`<div class="archive-preview-overlay" role="presentation" onclick="if(event.target===this)archivePreviewClose()"><div class="archive-preview-dialog" role="dialog" aria-modal="true" aria-label="画像プレビュー"><div class="archive-preview-top"><div class="archive-preview-meta"><strong>${safe(m.name||`画像 ${i+1}`)}</strong>${m.year?`<span>${safe(dateLabel(m))}</span>`:''}</div><button type="button" class="archive-preview-close" aria-label="閉じる" onclick="archivePreviewClose()">×</button></div><div class="archive-preview-media" ontouchstart="archivePreviewTouchStart(event)" ontouchmove="archivePreviewTouchMove(event)" ontouchend="archivePreviewTouchEnd(event)" ontouchcancel="archivePreviewTouchCancel()"><img src="${o.images[i]}" alt="${safe(m.name||'画像')}" draggable="false"></div><div class="archive-preview-controls"><button type="button" onclick="archivePreviewNext(-1)" aria-label="前の画像" ${o.images.length===1?'disabled':''}>‹</button><span>${sortedImageIndices(o).indexOf(i)+1} / ${o.images.length}</span><button type="button" onclick="archivePreviewNext(1)" aria-label="次の画像" ${o.images.length===1?'disabled':''}>›</button></div></div></div>`;
 }
 window.archivePreviewTouchStart=function(ev){if(ev.touches.length!==1)return;gesture={x:ev.touches[0].clientX,y:ev.touches[0].clientY}};
 window.archivePreviewTouchMove=function(ev){if(!gesture||ev.touches.length!==1)return;const dx=ev.touches[0].clientX-gesture.x,dy=ev.touches[0].clientY-gesture.y;if(Math.abs(dx)>18&&Math.abs(dx)>Math.abs(dy)*1.3&&ev.cancelable)ev.preventDefault()};
